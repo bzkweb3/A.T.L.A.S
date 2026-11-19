@@ -1,30 +1,55 @@
-
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
+from backend.app.api.chat import router as chat_router
 from backend.app.core.config import Settings, load_settings
+from backend.app.intelligence.openai_provider import OpenAIProvider
+from backend.app.intelligence.provider import AIProvider, AIProviderError
+
+FRONTEND_INDEX = Path(__file__).resolve().parents[3] / "frontend" / "index.html"
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    """Build the HTTP application with its configuration supplied up front."""
+def create_app(
+    settings: Settings | None = None,
+    ai_provider: AIProvider | None = None,
+) -> FastAPI:
+    """Build the HTTP application with injectable settings and AI provider."""
 
     app_settings = settings or load_settings()
     application = FastAPI(
         title="A.T.L.A.S.",
         description="Assistente de Tarefas, Linguagem, Automação e Sistemas",
-        version="0.1.0",
+        version="0.2.0",
     )
     application.state.settings = app_settings
+
+    if ai_provider is not None:
+        application.state.ai_provider = ai_provider
+    elif app_settings.openai_api_key:
+        try:
+            application.state.ai_provider = OpenAIProvider(app_settings)
+        except AIProviderError:
+            application.state.ai_provider = None
+    else:
+        application.state.ai_provider = None
+
+    application.include_router(chat_router)
 
     @application.get("/")
     async def inicio():
         return {
             "sistema": "A.T.L.A.S.",
             "status": "operacional",
-            "mensagem": "Núcleo central iniciado.",
-            "versao": "0.1.0",
+            "mensagem": "Núcleo central iniciado. A interface está disponível em /app.",
+            "versao": "0.2.0",
         }
+
+    @application.get("/app", include_in_schema=False)
+    async def interface():
+        return FileResponse(FRONTEND_INDEX)
 
     @application.get("/health")
     async def verificar_saude():
