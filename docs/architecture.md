@@ -2,45 +2,40 @@
 
 ## Direção
 
-O A.T.L.A.S. terá um núcleo central lógico, acessível por diferentes
-interfaces e preparado para coordenar memória, provedores de inteligência
-artificial e agentes especializados. Os componentes concretos serão ligados
-ao núcleo por contratos para reduzir dependência de fornecedores e ambientes.
+O A.T.L.A.S. terá um núcleo central lógico, acessível por diferentes interfaces e preparado para coordenar memória, provedores de inteligência artificial e agentes especializados. Os componentes concretos serão ligados ao núcleo por contratos para reduzir dependência de fornecedores e ambientes.
 
-O desenvolvimento e a execução atuais permanecem locais. A fundação deve
-permitir uma implantação híbrida futura, sem introduzir agora serviços de
-nuvem, agentes executáveis ou provedores reais de IA.
+O desenvolvimento e a execução atuais permanecem locais. A fundação permite uma implantação híbrida futura. Nesta entrega, a primeira integração real usa a API da OpenAI por trás de um contrato independente de provedor.
 
-## Limites da primeira etapa
+## Componentes
 
-- `api` recebe requisições HTTP, valida entradas e apresenta respostas.
-- `core` contém configuração e políticas transversais.
-- `application` coordenará casos de uso e contratos entre a API e o núcleo.
-- `memory` conterá os modelos e serviços de memória estruturada.
-- `intelligence` definirá o contrato independente de provedor.
-- `orchestrator` coordenará o fluxo central e, em fases futuras, agentes.
-- `infrastructure` conterá implementações técnicas como SQLite e integrações.
+- `api`: recebe requisições HTTP e valida entradas.
+- `core`: contém configurações transversais e leitura de variáveis de ambiente.
+- `intelligence`: define o contrato de IA e o adaptador OpenAI.
+- `frontend`: interface web inicial do A.T.L.A.S.
+- `tests`: testes automatizados com provedor simulado, sem chamadas pagas.
 
-Na etapa atual, somente a configuração básica e a fábrica da aplicação FastAPI
-estão implementadas. Banco de dados, autenticação, integração real com IA,
-memória e execução de agentes ainda não fazem parte do backend.
+## Integração de IA
 
-## Configuração atual
+O endpoint `POST /api/chat` recebe o histórico recente enviado pelo cliente e devolve a resposta do assistente. A implementação usa o SDK oficial da OpenAI e a Responses API. A chave é lida somente no backend por meio de `OPENAI_API_KEY`; o modelo é configurável por `ATLAS_AI_MODEL`, com padrão inicial `gpt-5.5`.
 
-O processo lê `ATLAS_ENV` (`development`, `test` ou `production`) do ambiente
-do processo. O padrão é `development`. Um valor inválido interrompe a
-inicialização com uma mensagem clara. A configuração fica disponível no estado
-da aplicação para os próximos módulos e não é incluída nas respostas HTTP.
+Crie um arquivo local `.env` com:
 
-Ainda não há leitura de arquivo `.env` nem configuração de segredos, banco,
-autenticação ou provedor de IA. Esses parâmetros serão definidos junto às
-respectivas etapas, sem guardar credenciais no código ou no repositório.
+```dotenv
+OPENAI_API_KEY=sua_chave_aqui
+ATLAS_AI_MODEL=gpt-5.5
+ATLAS_ENV=development
+```
 
-## Decisões já consolidadas
+O arquivo `.env` é ignorado pelo Git. Nunca coloque a chave em arquivos frontend, no repositório, em capturas de tela ou em mensagens. O arquivo `.env.example` contém somente nomes e valores ilustrativos.
 
-- SQLite será o banco inicial, local e isolado por uma camada de persistência.
-- O desenho deve permitir avaliar PostgreSQL futuramente, sem implementá-lo
-  nesta fase.
-- O núcleo usará uma abstração de provedor de IA; nenhum provedor real será
-  escolhido ou conectado nesta etapa.
-- A memória será estruturada e relacional; busca vetorial fica fora da Fase 1.
+## Limites conhecidos desta versão
+
+- O histórico de conversa fica temporariamente na memória da página e é enviado novamente a cada mensagem.
+- Ainda não há persistência de conversas, memória estruturada, autenticação, controle multiusuário ou agentes executores.
+- A interface inicial está em `/app`; a rota `/` e a rota `/health` foram preservadas.
+- Testes usam um provedor simulado e não consomem créditos de API.
+- A execução local e a instalação das dependências precisam ser verificadas no computador de desenvolvimento.
+
+## Próxima evolução
+
+Implementar memória relacional em SQLite, gestão de conversas e contexto persistente, mantendo a separação entre API, aplicação, inteligência e infraestrutura.

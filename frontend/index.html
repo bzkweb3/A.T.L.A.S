@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d18">
+  <title>A.T.L.A.S. — Sua inteligência, em qualquer lugar.</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:#080d18; color:#e8eefb; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:radial-gradient(ellipse at 50% 5%,#142a49 0,transparent 42%),#080d18; }
+    .shell { width:min(920px,100%); min-height:100vh; margin:auto; padding:28px 22px; display:flex; flex-direction:column; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; border-bottom:1px solid #1d2b42; padding:4px 0 20px; }
+    .brand { display:flex; align-items:center; gap:13px; }
+    .mark { width:42px; height:42px; border:1px solid #4c9cff; border-radius:14px; display:grid; place-items:center; color:#8dc5ff; box-shadow:0 0 28px #2379d744,inset 0 0 18px #2379d722; font-size:22px; }
+    h1 { font-size:17px; letter-spacing:.18em; margin:0; }
+    .tagline { color:#91a4c2; font-size:12px; margin-top:4px; }
+    .status { color:#9ac8ff; font-size:12px; border:1px solid #29496d; background:#10213a; border-radius:99px; padding:7px 11px; white-space:nowrap; }
+    main { flex:1; display:flex; flex-direction:column; padding:52px 0 24px; }
+    .intro { text-align:center; margin:0 auto 34px; max-width:620px; }
+    .orb { width:94px; height:94px; margin:0 auto 22px; border-radius:50%; border:1px solid #4b9cff88; display:grid; place-items:center; background:radial-gradient(circle,#2766a866 0,#142c4d88 42%,#0a1425 72%); box-shadow:0 0 55px #2589ff33,inset 0 0 25px #5eb4ff22; position:relative; }
+    .orb:before,.orb:after { content:""; position:absolute; border:1px solid #3c8ddd55; border-radius:50%; inset:-9px; }
+    .orb:after { inset:-18px; border-color:#3c8ddd22; }
+    .orb span { font-size:34px; color:#a9d7ff; text-shadow:0 0 22px #53aaff; }
+    h2 { font-size:clamp(25px,5vw,36px); letter-spacing:-.035em; margin:0 0 12px; }
+    .intro p { color:#91a2bd; font-size:14px; line-height:1.7; margin:0; }
+    .chat { width:100%; max-width:760px; margin:0 auto; flex:1; display:flex; flex-direction:column; gap:14px; }
+    #messages { flex:1; min-height:170px; max-height:48vh; overflow:auto; display:flex; flex-direction:column; gap:12px; padding:4px 2px 16px; }
+    .bubble { max-width:min(82%,650px); padding:13px 16px; border-radius:16px; font-size:14px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .user { align-self:flex-end; background:#18375c; border:1px solid #2c5c8e; border-bottom-right-radius:5px; }
+    .assistant { align-self:flex-start; background:#101b2c; border:1px solid #233650; border-bottom-left-radius:5px; }
+    .composer { border:1px solid #2b405d; border-radius:18px; padding:10px; display:flex; gap:10px; background:#0d1726; box-shadow:0 14px 50px #0005; }
+    textarea { flex:1; resize:vertical; min-height:48px; max-height:140px; border:0; outline:0; background:transparent; color:#eef5ff; padding:12px 10px; font:inherit; font-size:14px; }
+    textarea::placeholder { color:#71839e; }
+    button { align-self:flex-end; border:0; border-radius:12px; padding:0 18px; min-height:46px; color:#071322; background:linear-gradient(135deg,#8acaff,#4d9fff); font-weight:700; cursor:pointer; }
+    button:disabled { opacity:.5; cursor:wait; }
+    .hint { color:#667b99; text-align:center; font-size:11px; margin:10px 0 0; }
+    .error { color:#ffb5b5; border-color:#70404a; }
+    footer { color:#526680; font-size:11px; text-align:center; padding-top:20px; }
+    @media(max-width:600px) { .shell{padding:18px 14px}.status{font-size:10px}.intro{margin-bottom:24px}main{padding-top:36px}#messages{max-height:52vh}.bubble{max-width:92%}button{padding:0 13px} }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand"><div class="mark">✧</div><div><h1>A.T.L.A.S.</h1><div class="tagline">Sua inteligência, em qualquer lugar.</div></div></div>
+      <div class="status">● Núcleo local</div>
+    </header>
+    <main>
+      <section class="intro">
+        <div class="orb"><span>✧</span></div>
+        <h2>Como posso ajudar?</h2>
+        <p>Uma inteligência central. Uma experiência em evolução.<br>Converse com a primeira versão do A.T.L.A.S.</p>
+      </section>
+      <section class="chat" aria-label="Conversa com A.T.L.A.S.">
+        <div id="messages" aria-live="polite"></div>
+        <form id="form" class="composer">
+          <textarea id="prompt" placeholder="Escreva sua mensagem para o A.T.L.A.S...." maxlength="8000" required></textarea>
+          <button id="send" type="submit">Enviar ↗</button>
+        </form>
+        <p class="hint">Versão inicial • As conversas ainda não são salvas após encerrar a sessão.</p>
+      </section>
+    </main>
+    <footer>A.T.L.A.S. · Núcleo de inteligência em desenvolvimento</footer>
+  </div>
+  <script>
+    const form = document.getElementById("form");
+    const promptInput = document.getElementById("prompt");
+    const sendButton = document.getElementById("send");
+    const messagesElement = document.getElementById("messages");
+    const history = [];
+
+    function addMessage(role, content, isError = false) {
+      const bubble = document.createElement("div");
+      bubble.className = "bubble " + role + (isError ? " error" : "");
+      bubble.textContent = content;
+      messagesElement.appendChild(bubble);
+      messagesElement.scrollTop = messagesElement.scrollHeight;
+      return bubble;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const content = promptInput.value.trim();
+      if (!content || sendButton.disabled) return;
+
+      history.push({ role: "user", content });
+      addMessage("user", content);
+      promptInput.value = "";
+      sendButton.disabled = true;
+      sendButton.textContent = "Aguarde...";
+      const pending = addMessage("assistant", "Estou processando sua mensagem...");
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: history })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || "Não foi possível obter uma resposta.");
+        pending.textContent = data.reply;
+        history.push({ role: "assistant", content: data.reply });
+      } catch (error) {
+        pending.remove();
+        addMessage("assistant", error.message, true);
+        history.pop();
+      } finally {
+        sendButton.disabled = false;
+        sendButton.textContent = "Enviar ↗";
+        promptInput.focus();
+      }
+    });
+  </script>
+</body>
+</html>
