@@ -9,7 +9,7 @@ from backend.app.core.config import Settings, load_settings
 from backend.app.intelligence.openai_provider import OpenAIProvider
 from backend.app.intelligence.provider import AIProvider, AIProviderError
 
-FRONTEND_INDEX = Path(__file__).resolve().parents[3] / "frontend" / "index.html"
+FRONTEND_INDEX = Path(__file__).resolve().parents[2] / "frontend" / "index.html"
 
 
 def create_app(
