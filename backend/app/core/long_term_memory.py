@@ -62,7 +62,8 @@ class LongTermMemory:
         for pattern, category, key in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
-                value = re.split(r"[.!?\n,;]", match.group(1), maxsplit=1)[0].strip()
+                delimiters = r"[.!?\n;]" if key == "location" else r"[.!?\n,;]"
+                value = re.split(delimiters, match.group(1), maxsplit=1)[0].strip()
                 if value:
                     saved.append(self.remember(category, key, value))
         return saved
