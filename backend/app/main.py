@@ -10,6 +10,7 @@ from backend.app.api.diagnostics import router as diagnostics_router
 from backend.app.core.config import Settings, load_settings
 from backend.app.core.memory import ConversationStore
 from backend.app.core.long_term_memory import LongTermMemory
+from backend.app.persistence.sqlite import SQLiteDatabase
 from backend.app.intelligence.gemini_provider import GeminiProvider
 from backend.app.intelligence.openai_provider import OpenAIProvider
 from backend.app.intelligence.provider import AIProvider, AIProviderError
@@ -21,8 +22,10 @@ def create_app(settings: Settings | None = None, ai_provider: AIProvider | None 
     app_settings = settings or load_settings()
     application = FastAPI(title="A.T.L.A.S.", description="Assistente de Tarefas, Linguagem, Automação e Sistemas", version="0.4.0")
     application.state.settings = app_settings
-    application.state.memory = ConversationStore(app_settings.database_path)
-    application.state.long_term_memory = LongTermMemory(app_settings.database_path)
+    database = SQLiteDatabase(app_settings.database_path)
+    application.state.database = database
+    application.state.memory = ConversationStore(database)
+    application.state.long_term_memory = LongTermMemory(database)
 
     if ai_provider is not None:
         application.state.ai_provider = ai_provider

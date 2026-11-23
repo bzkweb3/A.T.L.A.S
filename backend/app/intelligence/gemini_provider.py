@@ -4,6 +4,7 @@ import asyncio
 import logging
 import time
 
+import httpx
 from google import genai
 from google.genai import errors, types
 
@@ -18,7 +19,8 @@ ATLAS_INSTRUCTIONS = (
     "Não afirme ter executado ações externas que não foram realmente realizadas. "
     "Respeite limites, permissões e solicitações de confirmação do usuário."
 )
-EMERGENCY_FALLBACK_MODELS = ("gemini-2.5-flash", "gemini-2.5-flash-lite")
+EMERGENCY_FALLBACK_MODELS = ("gemini-3.6-flash", "gemini-3.5-flash-lite")
+DEPRECATED_MODEL_ALIASES = {"gemini-2.5-flash", "gemini-3.5-flash"}
 RETRYABLE_STATUS_CODES = {404, 408, 429, 500, 502, 503, 504}
 MODEL_CATALOG_TTL_SECONDS = 300
 
@@ -28,13 +30,16 @@ def _model_sequence(primary_model: str, available_models: list[str] | None = Non
         candidates = list(EMERGENCY_FALLBACK_MODELS)
     else:
         candidates = [name.removeprefix("models/") for name in available_models
-            if "flash" in name.lower() and not any(term in name.lower() for term in ("image", "tts", "audio"))]
+            if "flash" in name.lower()
+            and name.removeprefix("models/").lower() not in DEPRECATED_MODEL_ALIASES
+            and not any(term in name.lower() for term in ("image", "tts", "audio"))]
     candidates = [
         name for name in set(candidates)
         if "omni" not in name.lower() and "audio" not in name.lower()
     ]
+    fallback_priority = {name: index for index, name in enumerate(EMERGENCY_FALLBACK_MODELS)}
     candidates.sort(key=lambda name: (
-        "lite" in name.lower(),
+        fallback_priority.get(name, len(fallback_priority)),
         "preview" in name.lower(),
         name.lower(),
     ))
@@ -117,11 +122,19 @@ class GeminiProvider:
                         if status in {401, 403} or status not in RETRYABLE_STATUS_CODES:
                             raise _provider_error(status) from None
                         failures.append(f"{model}: HTTP {status}")
-                    except (TimeoutError, OSError):
+                    except httpx.TimeoutException:
+                        last_status = 504
+                        logger.warning("Timeout na API Gemini; modelo=%s.", model)
+                        failures.append(f"{model}: timeout")
+                    except (httpx.RequestError, TimeoutError, OSError):
+                        last_status = 502
+                        logger.warning("Falha de transporte na API Gemini; modelo=%s.", model)
                         failures.append(f"{model}: timeout/rede")
         except AIProviderError:
             raise
-        except (TimeoutError, OSError):
+        except httpx.TimeoutException:
             raise AIProviderError("Não foi possível conectar aos modelos Gemini. Verifique a conexão e tente novamente.", http_status=504) from None
+        except (httpx.RequestError, TimeoutError, OSError):
+            raise AIProviderError("Não foi possível conectar aos modelos Gemini. Verifique a conexão e tente novamente.", http_status=502) from None
         logger.error("Todos os modelos Gemini falharam; modelos=%s, falhas=%s", models if "models" in locals() else [], failures)
         raise _provider_error(last_status)

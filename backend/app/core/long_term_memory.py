@@ -1,55 +1,23 @@
-"""Long-term personal memory stored separately from conversation history."""
+"""Long-term memory service for explicit user facts and contextual recall."""
 
-from datetime import datetime, timezone
-from pathlib import Path
 import re
-import sqlite3
+
+from backend.app.persistence.repositories import MemoryRepository
+from backend.app.persistence.sqlite import SQLiteDatabase
 
 
 class LongTermMemory:
-    """Stores explicit user facts and builds a compact context for the AI."""
+    """Apply memory rules while delegating SQLite operations to a repository."""
 
-    def __init__(self, database_path: str) -> None:
-        self.database_path = database_path
-        self._uri = database_path.startswith("file:")
-        if database_path != ":memory:" and not self._uri:
-            Path(database_path).parent.mkdir(parents=True, exist_ok=True)
-        self._keeper = None
-        if database_path == ":memory:":
-            self.database_path = "file:atlas-profile?mode=memory&cache=shared"
-            self._uri = True
-            self._keeper = sqlite3.connect(self.database_path, uri=True)
-        with self._connect() as db:
-            db.execute("""
-                CREATE TABLE IF NOT EXISTS user_facts (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    category TEXT NOT NULL,
-                    fact_key TEXT NOT NULL,
-                    fact_value TEXT NOT NULL,
-                    source TEXT NOT NULL DEFAULT 'conversation',
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    UNIQUE(category, fact_key)
-                )
-            """)
-
-    def _connect(self):
-        db = sqlite3.connect(self.database_path, uri=self._uri)
-        db.row_factory = sqlite3.Row
-        return db
+    def __init__(self, database: str | SQLiteDatabase) -> None:
+        self.database = database if isinstance(database, SQLiteDatabase) else SQLiteDatabase(database)
+        self.repository = MemoryRepository(self.database)
 
     def remember(self, category: str, key: str, value: str, source: str = "conversation") -> dict:
         category, key, value = category.strip(), key.strip(), value.strip()
         if not category or not key or not value:
             raise ValueError("Categoria, chave e valor são obrigatórios.")
-        now = datetime.now(timezone.utc).isoformat()
-        with self._connect() as db:
-            db.execute("""
-                INSERT INTO user_facts(category, fact_key, fact_value, source, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(category, fact_key) DO UPDATE SET
-                    fact_value=excluded.fact_value, source=excluded.source, updated_at=excluded.updated_at
-            """, (category, key, value, source, now, now))
+        self.repository.remember(category, key, value, source)
         return {"category": category, "key": key, "value": value}
 
     def extract_explicit_facts(self, text: str) -> list[dict]:
@@ -84,20 +52,10 @@ class LongTermMemory:
         category, key = category.strip(), key.strip()
         if not category or not key:
             raise ValueError("Categoria e chave são obrigatórias.")
-        with self._connect() as db:
-            cursor = db.execute(
-                "DELETE FROM user_facts WHERE category = ? AND fact_key = ?",
-                (category, key),
-            )
-        return cursor.rowcount > 0
+        return self.repository.forget(category, key)
 
     def list_facts(self) -> list[dict]:
-        with self._connect() as db:
-            rows = db.execute(
-                "SELECT category, fact_key AS key, fact_value AS value, source, updated_at "
-                "FROM user_facts ORDER BY category, fact_key"
-            ).fetchall()
-        return [dict(row) for row in rows]
+        return self.repository.list_facts()
 
     def build_context(self) -> str:
         facts = self.list_facts()

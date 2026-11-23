@@ -32,7 +32,7 @@ Esta etapa inclui uma interface web de conversa, uma camada de provedores de IA,
    ```
 
 5. Copie `.env.example` para um novo arquivo chamado `.env` na raiz do projeto.
-6. Para usar Gemini, configure `ATLAS_AI_PROVIDER=gemini`, `ATLAS_AI_MODEL=gemini-2.5-flash` e preencha `GEMINI_API_KEY`.
+6. Para usar Gemini, configure `ATLAS_AI_PROVIDER=gemini`, `ATLAS_AI_MODEL=gemini-3.5-flash-lite` e preencha `GEMINI_API_KEY`.
 7. Para usar OpenAI, configure `ATLAS_AI_PROVIDER=openai`, informe o modelo desejado em `ATLAS_AI_MODEL` e preencha `OPENAI_API_KEY`.
 8. Nunca compartilhe chaves em conversas, capturas de tela ou repositórios.
 9. Inicie o servidor:
@@ -41,7 +41,9 @@ Esta etapa inclui uma interface web de conversa, uma camada de provedores de IA,
    python -m uvicorn backend.app.main:app --reload
    ```
 
-10. Abra `http://127.0.0.1:8000/app` no navegador.\n\nAs conversas são salvas automaticamente em SQLite no caminho definido por `ATLAS_DATABASE_PATH` (padrão: `data/atlas.db`). A interface restaura a conversa atual neste navegador. O banco fica na máquina local e não é enviado ao GitHub.
+10. Abra `http://127.0.0.1:8000/app` no navegador.
+
+As conversas são salvas automaticamente em SQLite no caminho definido por `ATLAS_DATABASE_PATH` (padrão: `data/atlas.db`). A interface restaura a conversa atual neste navegador. O banco fica na máquina local e não é enviado ao GitHub.
 
 ### Testes
 
@@ -58,7 +60,11 @@ Os testes de chat utilizam um provedor simulado e não fazem chamadas pagas às 
 - `/app`: interface inicial.
 - `/`: status básico do sistema.
 - `/health`: verificação de disponibilidade.
-- `/api/chat`: endpoint de conversa com gravação automática.\n- `/api/conversations`: lista conversas recentes.\n- `/api/conversations/{id}`: recupera uma conversa e suas mensagens.\n- `/api/memory`: lista fatos persistentes do perfil.\n- `/api/memory/facts`: registra um fato explicitamente informado pelo usuário.
+- `/api/chat`: endpoint de conversa com gravação automática.
+- `/api/conversations`: lista conversas recentes.
+- `/api/conversations/{id}`: recupera uma conversa e suas mensagens.
+- `/api/memory`: lista fatos persistentes do perfil.
+- `/api/memory/facts`: registra um fato explicitamente informado pelo usuário.
 - `/api/diagnostics`: diagnóstico local sem chamada ao provedor.
 - `/api/diagnostics/test`: teste real da conexão com IA, executado sob demanda.
 - `/docs`: documentação interativa da API.
@@ -69,7 +75,10 @@ Os testes de chat utilizam um provedor simulado e não fazem chamadas pagas às 
 - `ATLAS_AI_MODEL`: modelo utilizado pelo provedor selecionado.
 - `GEMINI_API_KEY`: chave privada do Google Gemini.
 - `OPENAI_API_KEY`: chave privada da OpenAI.
-- `ATLAS_ENV`: ambiente de execução; padrão `development`.\n- `ATLAS_DATABASE_PATH`: caminho do banco SQLite; padrão `data/atlas.db`.
+- `ATLAS_ENV`: ambiente de execução; padrão `development`.
+- `ATLAS_DATABASE_PATH`: caminho do banco SQLite; padrão `data/atlas.db`.
+
+Quando `ATLAS_AI_MODEL` não é informado, o backend usa `gemini-3.8-flash` para Gemini e `gpt-5.5` para OpenAI. Um valor definido no `.env` substitui esse padrão.
 
 O arquivo `.env` não deve ser versionado. O repositório contém apenas `.env.example`, sem credenciais reais.
 

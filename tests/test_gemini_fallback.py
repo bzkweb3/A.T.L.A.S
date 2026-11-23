@@ -1,6 +1,7 @@
 import asyncio
 from types import SimpleNamespace
 
+import httpx
 from google.genai import errors
 
 from backend.app.core.config import Settings
@@ -65,12 +66,16 @@ def test_model_sequence_uses_only_live_text_generation_models():
         [
             "models/gemini-2.5-flash",
             "models/gemini-2.5-flash-lite",
+            "models/gemini-3.5-flash",
+            "models/gemini-3.5-flash-lite",
+            "models/gemini-3.6-flash",
             "models/gemini-embedding-001",
             "models/gemini-3.1-flash-tts",
         ],
     ) == [
         "gemini-3.8-flash",
-        "gemini-2.5-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash-lite",
         "gemini-2.5-flash-lite",
     ]
 
@@ -96,8 +101,31 @@ def test_gemini_provider_uses_discovered_fallback_after_temporary_unavailability
     assert answer == "Resposta pelo modelo alternativo."
     assert models.called_models == [
         "gemini-3.8-flash",
-        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
     ]
+
+
+def test_gemini_provider_converts_httpx_timeout_to_provider_error(monkeypatch):
+    models = FakeModels([
+        httpx.ReadTimeout("request timed out"),
+        httpx.ReadTimeout("request timed out"),
+    ])
+    fake_client = FakeClient(models)
+    monkeypatch.setattr(
+        "backend.app.intelligence.gemini_provider.genai.Client",
+        lambda **kwargs: fake_client,
+    )
+    provider = GeminiProvider(
+        Settings(environment="test", gemini_api_key="test-key", ai_model="gemini-3.8-flash")
+    )
+
+    try:
+        asyncio.run(provider.generate_reply([ChatMessage(role="user", content="Olá")]))
+        raise AssertionError("Era esperado AIProviderError para timeout HTTPX.")
+    except AIProviderError as exc:
+        assert exc.http_status == 503
+
+    assert models.called_models == ["gemini-3.8-flash", "gemini-2.5-flash-lite"]
 
 
 def test_gemini_provider_stops_fallback_when_credentials_are_rejected(monkeypatch):
