@@ -159,6 +159,26 @@
     testConnectionButton.addEventListener("click", runConnectionTest);
     refreshDiagnostics();
     restoreConversation();
+    initializeUserMemory();
+
+    async function initializeUserMemory() {
+      try {
+        const response = await fetch("/api/memory");
+        if (!response.ok) return;
+        const data = await response.json();
+        const hasName = data.facts.some((fact) => fact.key === "name" || fact.key === "preferred_name");
+        if (hasName) return;
+        const name = window.prompt("Antes de começar: como devo chamar você?");
+        if (!name || !name.trim()) return;
+        await fetch("/api/memory/facts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ category: "profile", key: "name", value: name.trim() })
+        });
+      } catch (error) {
+        console.warn("Não foi possível inicializar o perfil de memória.", error);
+      }
+    }
 
     async function restoreConversation() {
       if (!conversationId) return;
