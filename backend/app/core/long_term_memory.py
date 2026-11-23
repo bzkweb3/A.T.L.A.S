@@ -60,14 +60,14 @@ class LongTermMemory:
             (r"\bprefiro\s+([^.!?\n;]{2,120})", "preferences", "general"),
             (r"\bminha preferência é\s+([^.!?\n;]{2,120})", "preferences", "general"),
             (r"\bdecidi que\s+([^.!?\n;]{2,180})", "decisions", "latest"),
-            (r"\bno projeto\s+([\wÀ-ÿ][\wÀ-ÿ -]{1,50}),\s*(?:estamos|estou|o objetivo é|a decisão é)\s*([^.!?\n;]{2,180})", "projects", "named"),
+            (r"\bno projeto\s+([\wÀ-ÿ][\wÀ-ÿ .'-]{1,50}?),\s*(?:estamos|estou|o objetivo é|a decisão é)\s*([^.!?\n;]{2,180})", "projects", "named"),
         ]
         saved = []
         for pattern, category, key in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 if category == "projects":
-                    project_name = match.group(1).strip()
+                    project_name = match.group(1).strip().strip(" .'-")
                     detail = match.group(2).strip()
                     project_key = re.sub(r"[^a-z0-9]+", "_", project_name.lower()).strip("_")
                     if project_key and detail:
