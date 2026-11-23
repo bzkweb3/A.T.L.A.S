@@ -18,6 +18,7 @@ class Settings:
     gemini_api_key: str | None = None
     ai_provider: str = "gemini"
     ai_model: str = "gemini-3.8-flash"
+    database_path: str = ":memory:"
 
 
 def load_settings() -> Settings:
@@ -41,4 +42,5 @@ def load_settings() -> Settings:
         gemini_api_key=os.getenv("GEMINI_API_KEY", "").strip() or None,
         ai_provider=ai_provider,
         ai_model=os.getenv("ATLAS_AI_MODEL", default_model).strip() or default_model,
+        database_path=os.getenv("ATLAS_DATABASE_PATH", "data/atlas.db").strip() or "data/atlas.db",
     )

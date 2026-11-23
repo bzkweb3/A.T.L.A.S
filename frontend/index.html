@@ -28,7 +28,9 @@
     #messages { flex:1; min-height:170px; max-height:48vh; overflow:auto; display:flex; flex-direction:column; gap:12px; padding:4px 2px 16px; }
     .bubble { max-width:min(82%,650px); padding:13px 16px; border-radius:16px; font-size:14px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
     .user { align-self:flex-end; background:#18375c; border:1px solid #2c5c8e; border-bottom-right-radius:5px; }
-    .assistant { align-self:flex-start; background:#101b2c; border:1px solid #233650; border-bottom-left-radius:5px; }\n    .model-note { color:#8ea8c8; font-size:10px; margin-top:7px; opacity:.9; }\n    .fallback-note { color:#e7bd72; }
+    .assistant { align-self:flex-start; background:#101b2c; border:1px solid #233650; border-bottom-left-radius:5px; }
+    .model-note { color:#8ea8c8; font-size:10px; margin-top:7px; opacity:.9; }
+    .fallback-note { color:#e7bd72; }
     .composer { border:1px solid #2b405d; border-radius:18px; padding:10px; display:flex; gap:10px; background:#0d1726; box-shadow:0 14px 50px #0005; }
     textarea { flex:1; resize:vertical; min-height:48px; max-height:140px; border:0; outline:0; background:transparent; color:#eef5ff; padding:12px 10px; font:inherit; font-size:14px; }
     textarea::placeholder { color:#71839e; }
@@ -89,7 +91,7 @@
           <textarea id="prompt" placeholder="Escreva sua mensagem para o A.T.L.A.S...." maxlength="8000" required></textarea>
           <button id="send" type="submit">Enviar ↗</button>
         </form>
-        <p class="hint">Versão inicial • As conversas ainda não são salvas após encerrar a sessão.</p>
+        <p class="hint">Memória local ativa • Suas conversas ficam salvas neste dispositivo.</p>
       </section>
     </main>
     <footer>A.T.L.A.S. · Núcleo de inteligência em desenvolvimento</footer>
@@ -100,6 +102,7 @@
     const sendButton = document.getElementById("send");
     const messagesElement = document.getElementById("messages");
     const history = [];
+    let conversationId = localStorage.getItem("atlas_conversation_id");
     const backendStatus = document.getElementById("backendStatus");
     const providerStatus = document.getElementById("providerStatus");
     const modelStatus = document.getElementById("modelStatus");
@@ -157,6 +160,51 @@
     document.getElementById("refreshStatus").addEventListener("click", refreshDiagnostics);
     testConnectionButton.addEventListener("click", runConnectionTest);
     refreshDiagnostics();
+    restoreConversation();
+    initializeUserMemory();
+
+    async function initializeUserMemory() {
+      try {
+        const response = await fetch("/api/memory");
+        if (!response.ok) return;
+        const data = await response.json();
+        const hasName = data.facts.some((fact) => fact.key === "name" || fact.key === "preferred_name");
+        if (hasName) return;
+        const name = window.prompt("Antes de começar: como devo chamar você?");
+        if (!name || !name.trim()) return;
+        await fetch("/api/memory/facts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ category: "profile", key: "name", value: name.trim() })
+        });
+      } catch (error) {
+        console.warn("Não foi possível inicializar o perfil de memória.", error);
+      }
+    }
+
+    async function restoreConversation() {
+      if (!conversationId) return;
+      try {
+        const response = await fetch("/api/conversations/" + encodeURIComponent(conversationId));
+        if (!response.ok) throw new Error("Conversa anterior não encontrada.");
+        const conversation = await response.json();
+        conversation.messages.forEach((message) => {
+          history.push({ role: message.role, content: message.content });
+          const bubble = addMessage(message.role, message.content);
+          if (message.role === "assistant" && message.model && message.provider !== "atlas-memory") {
+            const note = document.createElement("div");
+            note.className = message.fallback_used ? "model-note fallback-note" : "model-note";
+            note.textContent = message.fallback_used
+              ? "Resposta gerada pelo modelo alternativo " + message.model + "."
+              : "Modelo utilizado: " + message.model;
+            bubble.appendChild(note);
+          }
+        });
+      } catch (error) {
+        localStorage.removeItem("atlas_conversation_id");
+        conversationId = null;
+      }
+    }
 
     function addMessage(role, content, isError = false) {
       const bubble = document.createElement("div");
@@ -183,17 +231,28 @@
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history })
+          body: JSON.stringify({ messages: history, conversation_id: conversationId })
         });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || "Não foi possível obter uma resposta.");
+        const responseText = await response.text();
+        let data = null;
+        try {
+          data = responseText ? JSON.parse(responseText) : {};
+        } catch {
+          if (!response.ok) throw new Error(`Falha do servidor (HTTP ${response.status}). Tente novamente em instantes.`);
+          throw new Error("O servidor retornou uma resposta inválida. Tente novamente.");
+        }
+        if (!response.ok) throw new Error(data?.detail || `Falha do servidor (HTTP ${response.status}).`);
         pending.textContent = data.reply;
-        const modelNotice = document.createElement("div");
-        modelNotice.className = data.fallback_used ? "model-note fallback-note" : "model-note";
-        modelNotice.textContent = data.fallback_used
-          ? "Aviso: o modelo principal estava indisponível. Esta resposta foi gerada pelo modelo alternativo " + data.model + "."
-          : "Modelo utilizado: " + data.model;
-        pending.appendChild(modelNotice);
+        conversationId = data.conversation_id;
+        localStorage.setItem("atlas_conversation_id", conversationId);
+        if (data.provider !== "atlas-memory") {
+          const modelNotice = document.createElement("div");
+          modelNotice.className = data.fallback_used ? "model-note fallback-note" : "model-note";
+          modelNotice.textContent = data.fallback_used
+            ? "Modelo alternativo utilizado devido à indisponibilidade temporária do principal."
+            : "";
+          if (modelNotice.textContent) pending.appendChild(modelNotice);
+        }
         history.push({ role: "assistant", content: data.reply });
       } catch (error) {
         pending.remove();

@@ -14,30 +14,23 @@ ATLAS_INSTRUCTIONS = (
 
 
 class OpenAIProvider:
-    """Adapter that connects the A.T.L.A.S. core to OpenAI's Responses API."""
-
     def __init__(self, settings: Settings) -> None:
         if not settings.openai_api_key:
             raise AIProviderError("OPENAI_API_KEY não está configurada.")
-        self._api_key = settings.openai_api_key
-        self._model = settings.ai_model
+        self._api_key, self._model = settings.openai_api_key, settings.ai_model
 
     async def generate_reply(self, messages: list[ChatMessage]) -> str:
+        system_context = "\n\n".join(m.content for m in messages if m.role == "system")
+        input_messages = [{"role": m.role, "content": m.content} for m in messages if m.role != "system"]
         try:
             async with AsyncOpenAI(api_key=self._api_key, timeout=45.0) as client:
                 response = await client.responses.create(
                     model=self._model,
-                    instructions=ATLAS_INSTRUCTIONS,
-                    input=[
-                        {"role": message.role, "content": message.content}
-                        for message in messages
-                    ],
+                    instructions=ATLAS_INSTRUCTIONS + ("\n\n" + system_context if system_context else ""),
+                    input=input_messages,
                 )
         except OpenAIError:
-            raise AIProviderError(
-                "Não foi possível obter uma resposta do provedor de IA."
-            ) from None
-
+            raise AIProviderError("Não foi possível obter uma resposta do provedor de IA.") from None
         answer = (response.output_text or "").strip()
         if not answer:
             raise AIProviderError("O provedor de IA retornou uma resposta vazia.")
