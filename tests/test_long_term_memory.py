@@ -61,3 +61,23 @@ def test_personal_memory_questions_are_answered_without_calling_ai():
     assert "Sr. Brendo" in name.json()["reply"]
     assert location.status_code == 200
     assert "Cariacica" in location.json()["reply"]
+
+
+
+def test_explicit_location_is_saved_and_acknowledged_without_ai():
+    class MustNotRunProvider:
+        async def generate_reply(self, messages):
+            raise AssertionError("Declaração explícita de perfil não deve chamar a IA.")
+
+    client = TestClient(create_app(
+        settings=Settings(environment="test"),
+        ai_provider=MustNotRunProvider(),
+    ))
+    response = client.post("/api/chat", json={
+        "messages": [{"role": "user", "content": "Eu moro em Cariacica, no Espírito Santo."}]
+    })
+
+    assert response.status_code == 200
+    assert "Cariacica" in response.json()["reply"]
+    facts = client.get("/api/memory").json()["facts"]
+    assert any(f["key"] == "location" and f["value"] == "Cariacica" for f in facts)
