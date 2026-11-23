@@ -40,6 +40,7 @@ def create_app(settings: Settings | None = None, ai_provider: AIProvider | None 
         application.state.ai_provider = None
 
     application.include_router(chat_router)
+    application.include_router(diagnostics_router)
     application.include_router(conversations_router)
     application.include_router(memory_router)
 
