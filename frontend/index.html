@@ -89,7 +89,7 @@
           <textarea id="prompt" placeholder="Escreva sua mensagem para o A.T.L.A.S...." maxlength="8000" required></textarea>
           <button id="send" type="submit">Enviar ↗</button>
         </form>
-        <p class="hint">Versão inicial • As conversas ainda não são salvas após encerrar a sessão.</p>
+        <p class="hint">Memória local ativa • Suas conversas ficam salvas neste dispositivo.</p>
       </section>
     </main>
     <footer>A.T.L.A.S. · Núcleo de inteligência em desenvolvimento</footer>
@@ -100,6 +100,7 @@
     const sendButton = document.getElementById("send");
     const messagesElement = document.getElementById("messages");
     const history = [];
+    let conversationId = localStorage.getItem("atlas_conversation_id");
     const backendStatus = document.getElementById("backendStatus");
     const providerStatus = document.getElementById("providerStatus");
     const modelStatus = document.getElementById("modelStatus");
@@ -157,6 +158,31 @@
     document.getElementById("refreshStatus").addEventListener("click", refreshDiagnostics);
     testConnectionButton.addEventListener("click", runConnectionTest);
     refreshDiagnostics();
+    restoreConversation();
+
+    async function restoreConversation() {
+      if (!conversationId) return;
+      try {
+        const response = await fetch("/api/conversations/" + encodeURIComponent(conversationId));
+        if (!response.ok) throw new Error("Conversa anterior não encontrada.");
+        const conversation = await response.json();
+        conversation.messages.forEach((message) => {
+          history.push({ role: message.role, content: message.content });
+          const bubble = addMessage(message.role, message.content);
+          if (message.role === "assistant" && message.model) {
+            const note = document.createElement("div");
+            note.className = message.fallback_used ? "model-note fallback-note" : "model-note";
+            note.textContent = message.fallback_used
+              ? "Resposta gerada pelo modelo alternativo " + message.model + "."
+              : "Modelo utilizado: " + message.model;
+            bubble.appendChild(note);
+          }
+        });
+      } catch (error) {
+        localStorage.removeItem("atlas_conversation_id");
+        conversationId = null;
+      }
+    }
 
     function addMessage(role, content, isError = false) {
       const bubble = document.createElement("div");
@@ -183,11 +209,13 @@
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history })
+          body: JSON.stringify({ messages: history, conversation_id: conversationId })
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.detail || "Não foi possível obter uma resposta.");
         pending.textContent = data.reply;
+        conversationId = data.conversation_id;
+        localStorage.setItem("atlas_conversation_id", conversationId);
         const modelNotice = document.createElement("div");
         modelNotice.className = data.fallback_used ? "model-note fallback-note" : "model-note";
         modelNotice.textContent = data.fallback_used
