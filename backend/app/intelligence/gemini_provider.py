@@ -29,8 +29,18 @@ def _model_sequence(primary_model: str, available_models: list[str] | None = Non
     else:
         candidates = [name.removeprefix("models/") for name in available_models
             if "flash" in name.lower() and not any(term in name.lower() for term in ("image", "tts", "audio"))]
-    candidates = sorted(set(candidates), key=lambda name: ("-flash-lite" in name.lower(), name.lower()))
-    return list(dict.fromkeys((primary_model, *candidates)))
+    candidates = [
+        name for name in set(candidates)
+        if "omni" not in name.lower() and "audio" not in name.lower()
+    ]
+    candidates.sort(key=lambda name: (
+        "lite" in name.lower(),
+        "preview" in name.lower(),
+        name.lower(),
+    ))
+    # Keep failover bounded: a long list of unavailable models creates
+    # unnecessary latency and repeated quota errors for a single user turn.
+    return list(dict.fromkeys((primary_model, *candidates[:3])))
 
 
 def _provider_error(status_code: int | None) -> AIProviderError:
@@ -90,7 +100,8 @@ class GeminiProvider:
                     try:
                         response = await client.models.generate_content(model=model, contents=contents, config={
                             "system_instruction": ATLAS_INSTRUCTIONS + ("\n\n" + system_context if system_context else "")
-                            + f"\n\nMETADADOS INTERNOS: modelo atual {model}. Se perguntarem, informe exatamente esse identificador."
+                            + "\n\nNão revele nomes internos de modelos, provedores, identificadores técnicos ou detalhes de infraestrutura. "
+            "Se perguntarem qual modelo está ativo, explique apenas que você está usando a melhor opção disponível no momento."
                         })
                         answer = (response.text or "").strip()
                         if answer:
