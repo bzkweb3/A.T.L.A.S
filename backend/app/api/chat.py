@@ -43,7 +43,7 @@ async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
         raise HTTPException(status_code=404, detail="Conversa não encontrada. Inicie uma nova conversa.")
 
     latest_user_text = next((m.content for m in reversed(payload.messages) if m.role == "user"), "")
-    request.app.state.long_term_memory.extract_explicit_facts(latest_user_text)
+    extracted_facts = request.app.state.long_term_memory.extract_explicit_facts(latest_user_text)
     memory = request.app.state.long_term_memory
     context = memory.build_context()
     facts = {(fact["category"], fact["key"]): fact["value"] for fact in memory.list_facts()}
@@ -52,6 +52,12 @@ async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
     # asking the model to rediscover facts already stored in the user's profile.
     normalized_question = " ".join(latest_user_text.lower().strip(" ?!.").split())
     direct_reply = None
+    if extracted_facts:
+        saved = extracted_facts[0]
+        if saved["key"] in {"name", "preferred_name"}:
+            direct_reply = f"Prazer em falar com você, {saved['value']}! Vou usar esse nome daqui em diante."
+        elif saved["key"] == "location":
+            direct_reply = f"Entendido. Vou considerar que você mora em {saved['value']}."
     asks_name = any(term in normalized_question for term in (
         "sabe meu nome", "qual meu nome", "como eu me chamo", "como me chamo",
         "lembra meu nome", "lembra como me chamo",
@@ -60,13 +66,13 @@ async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
         "onde eu moro", "onde moro", "qual minha cidade", "qual cidade eu moro",
         "lembra onde moro", "lembra onde eu moro",
     ))
-    if asks_name:
+    if direct_reply is None and asks_name:
         name = facts.get(("profile", "preferred_name")) or facts.get(("profile", "name"))
         direct_reply = (
             f"Sei, {name}. 😊" if name else
             "Ainda não tenho seu nome registrado. Como gostaria que eu chamasse você?"
         )
-    elif asks_location:
+    elif direct_reply is None and asks_location:
         location = facts.get(("profile", "location"))
         direct_reply = (
             f"Você me informou que mora em {location}." if location else
