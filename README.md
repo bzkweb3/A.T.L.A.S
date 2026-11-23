@@ -6,57 +6,52 @@ Sua inteligência, em qualquer lugar.
 
 ## Primeira versão funcional
 
-Esta etapa adiciona uma interface web de conversa e integração de backend com a API da OpenAI, mantendo uma camada de provedor independente.
+Esta etapa inclui uma interface web de conversa e uma camada de provedores de IA. O Gemini é o provedor padrão para desenvolvimento; a integração OpenAI permanece disponível como alternativa.
 
 ### Requisitos
 
-- Python 3.11 ou superior (recomendado: Python 3.12).
-- Uma chave de API da OpenAI com faturamento configurado.
+- Python 3.11 ou superior.
 - VS Code ou outro editor Python.
+- Chave Gemini API (para o provedor padrão) ou chave OpenAI API.
 
 ### Configuração local no Windows
 
 1. Abra a pasta do projeto no VS Code.
 2. Abra o terminal integrado pelo menu **Terminal → Novo Terminal**.
-3. Crie um ambiente virtual:
+3. Crie e ative um ambiente virtual, se ainda não existir:
 
    ```powershell
    py -m venv .venv
-   ```
-
-4. Ative o ambiente:
-
-   ```powershell
    .\.venv\Scripts\Activate.ps1
    ```
 
-   Se a política do PowerShell impedir a ativação, use o interpretador `.venv\Scripts\python.exe` diretamente nos comandos seguintes.
-
-5. Instale as dependências:
+4. Instale as dependências:
 
    ```powershell
-   .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+   python -m pip install -r requirements.txt
    ```
 
-6. Copie `.env.example` para um novo arquivo chamado `.env` na raiz do projeto.
-7. Abra o arquivo `.env` e substitua o valor de `OPENAI_API_KEY` pela sua chave. Não envie a chave em conversas, capturas de tela ou repositórios.
-8. Inicie o servidor:
+5. Copie `.env.example` para um novo arquivo chamado `.env` na raiz do projeto.
+6. Para usar Gemini, configure `ATLAS_AI_PROVIDER=gemini`, `ATLAS_AI_MODEL=gemini-2.5-flash` e preencha `GEMINI_API_KEY`.
+7. Para usar OpenAI, configure `ATLAS_AI_PROVIDER=openai`, informe o modelo desejado em `ATLAS_AI_MODEL` e preencha `OPENAI_API_KEY`.
+8. Nunca compartilhe chaves em conversas, capturas de tela ou repositórios.
+9. Inicie o servidor:
 
    ```powershell
-   .\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --reload
+   python -m uvicorn backend.app.main:app --reload
    ```
 
-9. Abra `http://127.0.0.1:8000/app` no navegador.
+10. Abra `http://127.0.0.1:8000/app` no navegador.
 
 ### Testes
 
 Com as dependências instaladas, execute:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest
+python -m pytest -v
 ```
 
-Os testes de chat utilizam um provedor simulado e não fazem chamadas pagas à API.
+Os testes de chat utilizam um provedor simulado e não fazem chamadas pagas às APIs.
 
 ## Rotas
 
@@ -68,8 +63,10 @@ Os testes de chat utilizam um provedor simulado e não fazem chamadas pagas à A
 
 ## Configuração da IA
 
-- `OPENAI_API_KEY`: chave privada, lida exclusivamente pelo backend.
-- `ATLAS_AI_MODEL`: modelo de IA; padrão inicial `gpt-5.5`.
+- `ATLAS_AI_PROVIDER`: provedor ativo; `gemini` ou `openai`. Padrão: `gemini`.
+- `ATLAS_AI_MODEL`: modelo utilizado pelo provedor selecionado.
+- `GEMINI_API_KEY`: chave privada do Google Gemini.
+- `OPENAI_API_KEY`: chave privada da OpenAI.
 - `ATLAS_ENV`: ambiente de execução; padrão `development`.
 
 O arquivo `.env` não deve ser versionado. O repositório contém apenas `.env.example`, sem credenciais reais.
