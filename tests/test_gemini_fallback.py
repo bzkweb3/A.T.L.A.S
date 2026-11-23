@@ -5,17 +5,39 @@ from google.genai import errors
 
 from backend.app.core.config import Settings
 from backend.app.intelligence.gemini_provider import (
-    DEFAULT_FALLBACK_MODELS,
     GeminiProvider,
     _model_sequence,
 )
 from backend.app.intelligence.provider import AIProviderError, ChatMessage
 
 
+class FakePager:
+    def __init__(self, items):
+        self.items = items
+
+    def __aiter__(self):
+        self._iterator = iter(self.items)
+        return self
+
+    async def __anext__(self):
+        try:
+            return next(self._iterator)
+        except StopIteration:
+            raise StopAsyncIteration
+
+
 class FakeModels:
-    def __init__(self, outcomes):
+    def __init__(self, outcomes, catalog=None):
         self.outcomes = iter(outcomes)
         self.called_models = []
+        self.catalog = catalog or [
+            SimpleNamespace(name="models/gemini-2.5-flash", supported_actions=["generateContent"]),
+            SimpleNamespace(name="models/gemini-2.5-flash-lite", supported_actions=["generateContent"]),
+            SimpleNamespace(name="models/gemini-embedding-001", supported_actions=["embedContent"]),
+        ]
+
+    async def list(self, config=None):
+        return FakePager(self.catalog)
 
     async def generate_content(self, *, model, contents, config):
         self.called_models.append(model)
@@ -37,18 +59,23 @@ class FakeClient:
         return False
 
 
-def test_model_sequence_uses_primary_then_unique_fallbacks():
-    assert _model_sequence("gemini-3.8-flash") == [
+def test_model_sequence_uses_only_live_text_generation_models():
+    assert _model_sequence(
         "gemini-3.8-flash",
-        *DEFAULT_FALLBACK_MODELS,
-    ]
-    assert _model_sequence("gemini-3.5-flash-lite") == [
-        "gemini-3.5-flash-lite",
+        [
+            "models/gemini-2.5-flash",
+            "models/gemini-2.5-flash-lite",
+            "models/gemini-embedding-001",
+            "models/gemini-3.1-flash-tts",
+        ],
+    ) == [
+        "gemini-3.8-flash",
+        "gemini-2.5-flash",
         "gemini-2.5-flash-lite",
     ]
 
 
-def test_gemini_provider_uses_fallback_after_temporary_unavailability(monkeypatch):
+def test_gemini_provider_uses_discovered_fallback_after_temporary_unavailability(monkeypatch):
     models = FakeModels([
         errors.ServerError(503, {"error": {"message": "busy"}}, None),
         "Resposta pelo modelo alternativo.",
@@ -69,7 +96,7 @@ def test_gemini_provider_uses_fallback_after_temporary_unavailability(monkeypatc
     assert answer == "Resposta pelo modelo alternativo."
     assert models.called_models == [
         "gemini-3.8-flash",
-        "gemini-3.5-flash-lite",
+        "gemini-2.5-flash",
     ]
 
 
