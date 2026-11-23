@@ -68,6 +68,18 @@ class LongTermMemory:
                     saved.append(self.remember(category, key, value))
         return saved
 
+    def forget(self, category: str, key: str) -> bool:
+        """Remove one explicitly identified fact without affecting other memories."""
+        category, key = category.strip(), key.strip()
+        if not category or not key:
+            raise ValueError("Categoria e chave são obrigatórias.")
+        with self._connect() as db:
+            cursor = db.execute(
+                "DELETE FROM user_facts WHERE category = ? AND fact_key = ?",
+                (category, key),
+            )
+        return cursor.rowcount > 0
+
     def list_facts(self) -> list[dict]:
         with self._connect() as db:
             rows = db.execute(
