@@ -1,8 +1,10 @@
 """SQLite-backed conversation history for the A.T.L.A.S. core."""
 
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
+from typing import Iterator
 from uuid import uuid4
 
 
@@ -24,8 +26,17 @@ class ConversationStore:
         connection.row_factory = sqlite3.Row
         return connection
 
+    @contextmanager
+    def _connection(self) -> Iterator[sqlite3.Connection]:
+        connection = self._connect()
+        try:
+            with connection:
+                yield connection
+        finally:
+            connection.close()
+
     def _initialize(self) -> None:
-        with self._connect() as connection:
+        with self._connection() as connection:
             connection.execute("""
                 CREATE TABLE IF NOT EXISTS conversations (
                     id TEXT PRIMARY KEY,
@@ -70,10 +81,10 @@ class ConversationStore:
             raise ValueError("Uma troca precisa conter mensagem do usuário e resposta do assistente.")
 
         now = self._now()
-        with self._connect() as connection:
+        with self._connection() as connection:
             if conversation_id is None:
                 conversation_id = str(uuid4())
-                title = user_message["content"].strip().replace("\\n", " ")[:80] or "Nova conversa"
+                title = user_message["content"].strip().replace("\n", " ")[:80] or "Nova conversa"
                 connection.execute(
                     "INSERT INTO conversations (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
                     (conversation_id, title, now, now),
