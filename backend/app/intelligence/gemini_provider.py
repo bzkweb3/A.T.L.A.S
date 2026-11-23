@@ -1,6 +1,8 @@
-"""Google Gemini implementation with automatic model failover."""
+"""Google Gemini implementation with live model discovery and automatic failover."""
 
+import asyncio
 import logging
+import time
 
 from google import genai
 from google.genai import errors, types
@@ -17,17 +19,30 @@ ATLAS_INSTRUCTIONS = (
     "Respeite limites, permissões e solicitações de confirmação do usuário."
 )
 
-# Ordered by preference for the current development stage.
-DEFAULT_FALLBACK_MODELS = (
-    "gemini-3.5-flash-lite",
-    "gemini-2.5-flash-lite",
-)
+# Used only if the model catalog cannot be read. The catalog is the source of truth.
+EMERGENCY_FALLBACK_MODELS = ("gemini-2.5-flash", "gemini-2.5-flash-lite")
 RETRYABLE_STATUS_CODES = {404, 408, 429, 500, 502, 503, 504}
+MODEL_CATALOG_TTL_SECONDS = 300
 
 
-def _model_sequence(primary_model: str) -> list[str]:
-    """Return the configured model followed by unique fallback models."""
-    return list(dict.fromkeys((primary_model, *DEFAULT_FALLBACK_MODELS)))
+def _model_sequence(primary_model: str, available_models: list[str] | None = None) -> list[str]:
+    """Prefer the configured model, then currently listed text-generation Flash models."""
+    if available_models is None:
+        candidates = list(EMERGENCY_FALLBACK_MODELS)
+    else:
+        candidates = [
+            name.removeprefix("models/")
+            for name in available_models
+            if "flash" in name.lower()
+            and not any(term in name.lower() for term in ("image", "tts", "audio"))
+        ]
+    # Full Flash models are preferred to Lite models; names sort newest-first as a tie-break.
+    candidates = sorted(
+        set(candidates),
+        key=lambda name: ("-flash-lite" in name.lower(), name.lower()),
+        reverse=False,
+    )
+    return list(dict.fromkeys((primary_model, *candidates)))
 
 
 def _provider_error(status_code: int | None) -> AIProviderError:
@@ -38,12 +53,12 @@ def _provider_error(status_code: int | None) -> AIProviderError:
         )
     if status_code == 429:
         return AIProviderError(
-            "Todos os modelos Gemini disponíveis atingiram limites de uso. Tente novamente mais tarde.",
+            "O limite de uso dos modelos Gemini foi atingido. Tente novamente mais tarde.",
             http_status=503,
         )
     if status_code in {404, 408, 500, 502, 503, 504}:
         return AIProviderError(
-            "Nenhum dos modelos Gemini disponíveis conseguiu atender à solicitação. Tente novamente em alguns instantes.",
+            "Os modelos Gemini disponíveis estão temporariamente indisponíveis. Tente novamente em alguns instantes.",
             http_status=503,
         )
     return AIProviderError(
@@ -53,14 +68,44 @@ def _provider_error(status_code: int | None) -> AIProviderError:
 
 
 class GeminiProvider:
-    """Adapter that connects the A.T.L.A.S. core to Google's Gemini API."""
+    """Adapter that discovers usable models and fails over without user intervention."""
 
     def __init__(self, settings: Settings) -> None:
         if not settings.gemini_api_key:
             raise AIProviderError("GEMINI_API_KEY não está configurada.", http_status=503)
         self._api_key = settings.gemini_api_key
         self._model = settings.ai_model
-        self._models = _model_sequence(self._model)
+        self._cached_models: list[str] = []
+        self._catalog_checked_at = 0.0
+        self._catalog_lock = asyncio.Lock()
+
+    async def _available_models(self, client) -> list[str]:
+        """Read Google's live model catalog and cache it briefly."""
+        now = time.monotonic()
+        if self._cached_models and now - self._catalog_checked_at < MODEL_CATALOG_TTL_SECONDS:
+            return self._cached_models
+
+        async with self._catalog_lock:
+            now = time.monotonic()
+            if self._cached_models and now - self._catalog_checked_at < MODEL_CATALOG_TTL_SECONDS:
+                return self._cached_models
+            try:
+                pager = await client.aio.models.list(config={"page_size": 100})
+                discovered: list[str] = []
+                async for item in pager:
+                    actions = getattr(item, "supported_actions", None) or []
+                    name = getattr(item, "name", None)
+                    if name and "generateContent" in actions:
+                        discovered.append(name)
+                if discovered:
+                    self._cached_models = discovered
+                    self._catalog_checked_at = now
+            except Exception as exc:
+                logger.warning(
+                    "Não foi possível atualizar o catálogo Gemini; usando catálogo em cache/emergência. tipo=%s",
+                    type(exc).__name__,
+                )
+            return self._cached_models
 
     async def generate_reply(self, messages: list[ChatMessage]) -> str:
         result = await self.generate_reply_with_metadata(messages)
@@ -75,7 +120,7 @@ class GeminiProvider:
             for message in messages
         ]
         http_options = types.HttpOptions(
-            timeout=10_000,
+            timeout=12_000,
             retry_options=types.HttpRetryOptions(attempts=1),
         )
         last_status: int | None = None
@@ -86,7 +131,9 @@ class GeminiProvider:
                 api_key=self._api_key,
                 http_options=http_options,
             ).aio as client:
-                for model in self._models:
+                available = await self._available_models(client)
+                models = _model_sequence(self._model, available or None)
+                for model in models:
                     try:
                         response = await client.models.generate_content(
                             model=model,
@@ -140,7 +187,7 @@ class GeminiProvider:
 
         logger.error(
             "Todos os modelos Gemini falharam; modelos=%s, falhas=%s.",
-            self._models,
+            models if "models" in locals() else [],
             failures,
         )
         raise _provider_error(last_status)
