@@ -13,6 +13,10 @@ class ChatMessage:
 class AIProviderError(Exception):
     """Raised when an AI provider cannot complete a request."""
 
+    def __init__(self, message: str, *, http_status: int = 502) -> None:
+        super().__init__(message)
+        self.http_status = http_status
+
 
 class AIProvider(Protocol):
     async def generate_reply(self, messages: list[ChatMessage]) -> str:
