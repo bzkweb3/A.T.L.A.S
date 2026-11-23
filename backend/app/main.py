@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
 from backend.app.api.chat import router as chat_router
+from backend.app.api.diagnostics import router as diagnostics_router
 from backend.app.core.config import Settings, load_settings
 from backend.app.intelligence.gemini_provider import GeminiProvider
 from backend.app.intelligence.openai_provider import OpenAIProvider
@@ -43,6 +44,7 @@ def create_app(
         application.state.ai_provider = None
 
     application.include_router(chat_router)
+    application.include_router(diagnostics_router)
 
     @application.get("/")
     async def inicio():
