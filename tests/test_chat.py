@@ -43,7 +43,9 @@ def test_chat_returns_provider_response_without_real_api_call():
         "model": "fake-model",
         "fallback_used": False,
         "primary_model": "fake-model",
+        "conversation_id": response.json()["conversation_id"],
     }
+    assert response.json()["conversation_id"]
 
 
 def test_chat_reports_missing_api_configuration():
