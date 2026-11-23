@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from backend.app.api.chat import router as chat_router
 from backend.app.api.diagnostics import router as diagnostics_router
 from backend.app.core.config import Settings, load_settings
+from backend.app.core.memory import ConversationStore
 from backend.app.intelligence.gemini_provider import GeminiProvider
 from backend.app.intelligence.openai_provider import OpenAIProvider
 from backend.app.intelligence.provider import AIProvider, AIProviderError
@@ -27,6 +28,7 @@ def create_app(
         version="0.3.0",
     )
     application.state.settings = app_settings
+    application.state.memory = ConversationStore(app_settings.database_path)
 
     if ai_provider is not None:
         application.state.ai_provider = ai_provider
