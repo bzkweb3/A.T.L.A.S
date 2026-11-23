@@ -188,6 +188,12 @@
         const data = await response.json();
         if (!response.ok) throw new Error(data.detail || "Não foi possível obter uma resposta.");
         pending.textContent = data.reply;
+        const modelNotice = document.createElement("div");
+        modelNotice.className = data.fallback_used ? "model-note fallback-note" : "model-note";
+        modelNotice.textContent = data.fallback_used
+          ? "Aviso: o modelo principal estava indisponível. Esta resposta foi gerada pelo modelo alternativo " + data.model + "."
+          : "Modelo utilizado: " + data.model;
+        pending.appendChild(modelNotice);
         history.push({ role: "assistant", content: data.reply });
       } catch (error) {
         pending.remove();
