@@ -113,5 +113,12 @@ class LongTermMemory:
         for fact in facts:
             category = category_labels.get(fact["category"], fact["category"])
             lines.append(f"- {category} / {fact['key']}: {fact['value']}")
-        lines.append("Use essas informações quando forem relevantes. Não invente nem contradiga fatos registrados.")
+        lines.append(
+            "Use essas informações silenciosamente para personalizar respostas quando forem relevantes. "
+            "Não anuncie que está consultando uma memória, banco de dados, perfil ou ficha. "
+            "Não repita nem liste dados pessoais espontaneamente. "
+            "Só fale sobre informações armazenadas quando o usuário perguntar ou quando forem diretamente necessárias. "
+            "Nunca peça desculpas por consultar informações já fornecidas. "
+            "Não invente nem contradiga fatos registrados."
+        )
         return "\n".join(lines)
