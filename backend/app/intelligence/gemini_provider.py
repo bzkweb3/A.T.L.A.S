@@ -1,4 +1,4 @@
-"""Google Gemini implementation of the provider-independent contract."""
+"""Google Gemini implementation with automatic model failover."""
 
 import logging
 
@@ -17,13 +17,20 @@ ATLAS_INSTRUCTIONS = (
     "Respeite limites, permissões e solicitações de confirmação do usuário."
 )
 
+# Ordered by preference: primary model first, then lighter fallback models.
+DEFAULT_FALLBACK_MODELS = (
+    "gemini-3.5-flash-lite",
+    "gemini-2.5-flash-lite",
+)
+RETRYABLE_STATUS_CODES = {404, 408, 429, 500, 502, 503, 504}
+
+
+def _model_sequence(primary_model: str) -> list[str]:
+    """Return the configured model followed by unique fallback models."""
+    return list(dict.fromkeys((primary_model, *DEFAULT_FALLBACK_MODELS)))
+
+
 def _provider_error(status_code: int | None) -> AIProviderError:
-    if status_code == 404:
-        return AIProviderError(
-            "O modelo Gemini configurado não foi encontrado ou não está disponível para esta chave. "
-            "Confira ATLAS_AI_MODEL e os modelos liberados no Google AI Studio.",
-            http_status=502,
-        )
     if status_code in {401, 403}:
         return AIProviderError(
             "O Google recusou o acesso à API Gemini. Verifique a chave e as permissões no Google AI Studio.",
@@ -31,12 +38,12 @@ def _provider_error(status_code: int | None) -> AIProviderError:
         )
     if status_code == 429:
         return AIProviderError(
-            "O Gemini atingiu o limite de requisições ou de uso da cota. Tente novamente mais tarde.",
+            "Todos os modelos Gemini disponíveis atingiram limites de uso. Tente novamente mais tarde.",
             http_status=503,
         )
-    if status_code in {500, 502, 503, 504}:
+    if status_code in {404, 408, 500, 502, 503, 504}:
         return AIProviderError(
-            "O serviço Gemini está temporariamente indisponível. Nenhuma nova tentativa automática será feita; tente novamente em alguns instantes.",
+            "Nenhum dos modelos Gemini disponíveis conseguiu atender à solicitação. Tente novamente em alguns instantes.",
             http_status=503,
         )
     return AIProviderError(
@@ -53,6 +60,7 @@ class GeminiProvider:
             raise AIProviderError("GEMINI_API_KEY não está configurada.", http_status=503)
         self._api_key = settings.gemini_api_key
         self._model = settings.ai_model
+        self._models = _model_sequence(self._model)
 
     async def generate_reply(self, messages: list[ChatMessage]) -> str:
         contents = [
@@ -63,37 +71,70 @@ class GeminiProvider:
             for message in messages
         ]
 
-        # 12-second request timeout and one total attempt prevent stacked SDK/app retries.
+        # Each model gets a bounded request; SDK retries are disabled to keep
+        # failover predictable and prevent hidden, stacked retry delays.
         http_options = types.HttpOptions(
-            timeout=12_000,
+            timeout=10_000,
             retry_options=types.HttpRetryOptions(attempts=1),
         )
+        last_status: int | None = None
+        failures: list[str] = []
+
         try:
             async with genai.Client(
                 api_key=self._api_key,
                 http_options=http_options,
             ).aio as client:
-                response = await client.models.generate_content(
-                    model=self._model,
-                    contents=contents,
-                    config={"system_instruction": ATLAS_INSTRUCTIONS},
-                )
-        except errors.APIError as exc:
-            status_code = getattr(exc, "code", None)
-            logger.warning(
-                "Falha na API Gemini; modelo=%s, código_http=%s.",
-                self._model,
-                status_code,
-            )
-            raise _provider_error(status_code) from None
+                for model in self._models:
+                    try:
+                        response = await client.models.generate_content(
+                            model=model,
+                            contents=contents,
+                            config={"system_instruction": ATLAS_INSTRUCTIONS},
+                        )
+                        answer = (response.text or "").strip()
+                        if answer:
+                            if model != self._model:
+                                logger.warning(
+                                    "Gemini fallback acionado; modelo_principal=%s, modelo_utilizado=%s.",
+                                    self._model,
+                                    model,
+                                )
+                            return answer
+                        failures.append(f"{model}: resposta vazia")
+                        logger.warning("Gemini retornou resposta vazia; modelo=%s.", model)
+                    except errors.APIError as exc:
+                        status_code = getattr(exc, "code", None)
+                        last_status = status_code
+                        logger.warning(
+                            "Falha na API Gemini; modelo=%s, código_http=%s.",
+                            model,
+                            status_code,
+                        )
+                        if status_code in {401, 403}:
+                            raise _provider_error(status_code) from None
+                        if status_code not in RETRYABLE_STATUS_CODES:
+                            raise _provider_error(status_code) from None
+                        failures.append(f"{model}: HTTP {status_code}")
+                    except (TimeoutError, OSError) as exc:
+                        logger.warning(
+                            "Timeout ou falha de rede no Gemini; modelo=%s, tipo=%s.",
+                            model,
+                            type(exc).__name__,
+                        )
+                        failures.append(f"{model}: timeout/rede")
+        except AIProviderError:
+            raise
         except (TimeoutError, OSError) as exc:
-            logger.warning("Timeout ou falha de rede ao chamar Gemini: %s", type(exc).__name__)
+            logger.warning("Falha de conexão com a API Gemini: %s", type(exc).__name__)
             raise AIProviderError(
-                "O Gemini demorou mais de 12 segundos ou está inacessível. Tente novamente.",
+                "Não foi possível conectar aos modelos Gemini. Verifique a conexão e tente novamente.",
                 http_status=504,
             ) from None
 
-        answer = (response.text or "").strip()
-        if not answer:
-            raise AIProviderError("O Gemini retornou uma resposta vazia.")
-        return answer
+        logger.error(
+            "Todos os modelos Gemini falharam; modelos=%s, falhas=%s.",
+            self._models,
+            failures,
+        )
+        raise _provider_error(last_status)
