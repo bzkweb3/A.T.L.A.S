@@ -57,11 +57,21 @@ class LongTermMemory:
             (r"\bmeu nome é\s+([\wÀ-ÿ][\wÀ-ÿ .'-]{0,70})", "profile", "name"),
             (r"\bpode me chamar de\s+([\wÀ-ÿ][\wÀ-ÿ .'-]{0,50})", "profile", "preferred_name"),
             (r"\beu moro em\s+([\wÀ-ÿ][\wÀ-ÿ ,'-]{0,70})", "profile", "location"),
+            (r"\bprefiro\s+([^.!?\n;]{2,120})", "preferences", "general"),
+            (r"\bminha preferência é\s+([^.!?\n;]{2,120})", "preferences", "general"),
+            (r"\bno projeto\s+([\wÀ-ÿ][\wÀ-ÿ -]{1,50}),\s*(?:estamos|estou|o objetivo é|a decisão é)\s*([^.!?\n;]{2,180})", "projects", "named"),
         ]
         saved = []
         for pattern, category, key in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
+                if category == "projects":
+                    project_name = match.group(1).strip()
+                    detail = match.group(2).strip()
+                    project_key = re.sub(r"[^a-z0-9]+", "_", project_name.lower()).strip("_")
+                    if project_key and detail:
+                        saved.append(self.remember("projects", project_key, detail))
+                    continue
                 delimiters = r"[.!?\n;]" if key == "location" else r"[.!?\n,;]"
                 value = re.split(delimiters, match.group(1), maxsplit=1)[0].strip()
                 if value:
@@ -92,8 +102,15 @@ class LongTermMemory:
         facts = self.list_facts()
         if not facts:
             return ""
+        category_labels = {
+            "profile": "Perfil",
+            "preferences": "Preferências",
+            "projects": "Projetos",
+            "decisions": "Decisões",
+        }
         lines = ["MEMÓRIA PERSISTENTE DO USUÁRIO (informações fornecidas explicitamente):"]
         for fact in facts:
-            lines.append(f"- {fact['key']}: {fact['value']}")
+            category = category_labels.get(fact["category"], fact["category"])
+            lines.append(f"- {category} / {fact['key']}: {fact['value']}")
         lines.append("Use essas informações quando forem relevantes. Não invente nem contradiga fatos registrados.")
         return "\n".join(lines)
