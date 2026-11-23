@@ -18,7 +18,7 @@ class Settings:
     gemini_api_key: str | None = None
     ai_provider: str = "gemini"
     ai_model: str = "gemini-3.8-flash"
-    database_path: str = "data/atlas.db"
+    database_path: str = ":memory:"
 
 
 def load_settings() -> Settings:
