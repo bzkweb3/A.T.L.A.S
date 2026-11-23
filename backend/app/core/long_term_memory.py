@@ -59,6 +59,7 @@ class LongTermMemory:
             (r"\beu moro em\s+([\wÀ-ÿ][\wÀ-ÿ ,'-]{0,70})", "profile", "location"),
             (r"\bprefiro\s+([^.!?\n;]{2,120})", "preferences", "general"),
             (r"\bminha preferência é\s+([^.!?\n;]{2,120})", "preferences", "general"),
+            (r"\bdecidi que\s+([^.!?\n;]{2,180})", "decisions", "latest"),
             (r"\bno projeto\s+([\wÀ-ÿ][\wÀ-ÿ -]{1,50}),\s*(?:estamos|estou|o objetivo é|a decisão é)\s*([^.!?\n;]{2,180})", "projects", "named"),
         ]
         saved = []
