@@ -11,12 +11,16 @@ class ConversationStore:
 
     def __init__(self, database_path: str) -> None:
         self.database_path = database_path
-        if database_path != ":memory:":
+        self._keeper = None
+        if database_path == ":memory:":
+            self.database_path = f"file:atlas-{uuid4()}?mode=memory&cache=shared"
+            self._keeper = sqlite3.connect(self.database_path, uri=True)
+        else:
             Path(database_path).parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.database_path)
+        connection = sqlite3.connect(self.database_path, uri=self.database_path.startswith("file:"))
         connection.row_factory = sqlite3.Row
         return connection
 
