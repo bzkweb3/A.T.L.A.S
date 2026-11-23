@@ -11,6 +11,11 @@ class FakeProvider:
         return "Olá! Estou funcionando."
 
 
+class DiagnosticsProvider:
+    async def generate_reply(self, messages: list[ChatMessage]) -> str:
+        return "conexão estabelecida"
+
+
 class UnavailableProvider:
     async def generate_reply(self, messages: list[ChatMessage]) -> str:
         raise AIProviderError(
@@ -104,7 +109,7 @@ def test_diagnostics_reports_backend_and_configuration_without_calling_provider(
 def test_diagnostics_connection_test_uses_provider():
     app = create_app(
         settings=Settings(environment="test", ai_provider="gemini", ai_model="test-model"),
-        ai_provider=FakeProvider(),
+        ai_provider=DiagnosticsProvider(),
     )
     client = TestClient(app)
 
