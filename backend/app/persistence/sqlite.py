@@ -6,7 +6,7 @@ import sqlite3
 from typing import Iterator
 from uuid import uuid4
 
-_SCHEMA_VERSION = 1
+_SCHEMA_VERSION = 2
 
 
 class SQLiteDatabase:
@@ -50,6 +50,10 @@ class SQLiteDatabase:
             if current_version < 1:
                 self._migrate_to_version_1(connection)
                 connection.execute("PRAGMA user_version = 1")
+                current_version = 1
+            if current_version < 2:
+                self._migrate_to_version_2(connection)
+                connection.execute("PRAGMA user_version = 2")
 
     @staticmethod
     def _migrate_to_version_1(connection: sqlite3.Connection) -> None:
@@ -89,4 +93,12 @@ class SQLiteDatabase:
                 updated_at TEXT NOT NULL,
                 UNIQUE(category, fact_key)
             )"""
+        )
+
+    @staticmethod
+    def _migrate_to_version_2(connection: sqlite3.Connection) -> None:
+        """Add data classification while keeping existing facts personal by default."""
+        connection.execute(
+            "ALTER TABLE user_facts ADD COLUMN classification TEXT NOT NULL DEFAULT 'personal' "
+            "CHECK(classification IN ('general', 'personal', 'sensitive'))"
         )

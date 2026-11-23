@@ -30,9 +30,9 @@ O banco é local, configurado por `ATLAS_DATABASE_PATH` e ignorado pelo Git. A v
 
 ## Memória atual e limites
 
-A memória de longo prazo armazena fatos simples por categoria e chave, com valor, origem e datas. Há operações de criação/atualização, consulta e exclusão individual. Algumas declarações explícitas são extraídas por regras de texto e fatos relevantes são incluídos no contexto enviado ao provedor.
+A memória de longo prazo armazena fatos simples por categoria e chave, com valor, origem, classificação e datas. Há operações de criação/atualização, consulta e exclusão individual. As classificações disponíveis são `general`, `personal` e `sensitive`; fatos sensíveis não são incluídos no contexto enviado ao provedor. Algumas declarações explícitas são extraídas por regras de texto e fatos relevantes são incluídos no contexto enviado ao provedor.
 
-Ainda faltam classificação e proteção diferenciada de dados sensíveis, autenticação, autorização por usuário, gestão completa de perfil/projetos/decisões/tarefas e exclusão de conversas pela API. A extração atual é baseada em padrões simples e não representa compreensão geral de linguagem.
+Ainda faltam criptografia de dados sensíveis, autenticação, autorização por usuário, gestão completa de perfil/projetos/decisões/tarefas e exclusão de conversas pela API. A classificação sensível impede o envio ao provedor, mas não criptografa o valor armazenado no SQLite. A extração atual é baseada em padrões simples e não representa compreensão geral de linguagem.
 
 ## Limites desta etapa
 
@@ -45,9 +45,9 @@ Ainda faltam classificação e proteção diferenciada de dados sensíveis, aute
 
 ## Próximos passos da fundação
 
-1. Evoluir as migrações com cada mudança de esquema e definir o ciclo de vida da conexão da aplicação.
-2. Estruturar a memória relacional com origem, classificação e tratamento de dados sensíveis.
-3. Definir autenticação local e autorização antes de expor a API fora da máquina.
+1. Definir autenticação local e autorização antes de expor a API fora da máquina.
+2. Avaliar proteção criptográfica dos dados sensíveis e política de chaves.
+3. Completar a memória relacional para projetos, decisões e tarefas.
 4. Atualizar os contratos e a documentação conforme a aplicação evoluir.
 
 Agentes, execução de ações, componentes de nuvem e comunicação com dispositivos permanecem para etapas posteriores, após a consolidação da fundação e do modelo de permissões.

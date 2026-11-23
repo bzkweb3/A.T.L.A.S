@@ -13,12 +13,21 @@ class LongTermMemory:
         self.database = database if isinstance(database, SQLiteDatabase) else SQLiteDatabase(database)
         self.repository = MemoryRepository(self.database)
 
-    def remember(self, category: str, key: str, value: str, source: str = "conversation") -> dict:
+    def remember(
+        self,
+        category: str,
+        key: str,
+        value: str,
+        source: str = "conversation",
+        classification: str = "personal",
+    ) -> dict:
         category, key, value = category.strip(), key.strip(), value.strip()
         if not category or not key or not value:
             raise ValueError("Categoria, chave e valor são obrigatórios.")
-        self.repository.remember(category, key, value, source)
-        return {"category": category, "key": key, "value": value}
+        if classification not in {"general", "personal", "sensitive"}:
+            raise ValueError("Classificação deve ser general, personal ou sensitive.")
+        self.repository.remember(category, key, value, source, classification)
+        return {"category": category, "key": key, "value": value, "classification": classification}
 
     def extract_explicit_facts(self, text: str) -> list[dict]:
         patterns = [
@@ -58,7 +67,9 @@ class LongTermMemory:
         return self.repository.list_facts()
 
     def build_context(self) -> str:
-        facts = self.list_facts()
+        # Sensitive facts remain available to local memory APIs but are never
+        # sent to an AI provider through the prompt context.
+        facts = [fact for fact in self.list_facts() if fact["classification"] != "sensitive"]
         if not facts:
             return ""
         category_labels = {

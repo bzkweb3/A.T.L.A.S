@@ -1,5 +1,7 @@
 """Conversation history and long-term memory endpoints."""
 
+from typing import Literal
+
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -11,6 +13,7 @@ class FactInput(BaseModel):
     category: str = Field(min_length=1, max_length=40)
     key: str = Field(min_length=1, max_length=80)
     value: str = Field(min_length=1, max_length=500)
+    classification: Literal["general", "personal", "sensitive"] = "personal"
 
 
 @router.get("")
@@ -43,5 +46,6 @@ async def delete_memory_fact(category: str, key: str, request: Request) -> dict:
 @memory_router.post("/facts")
 async def save_memory_fact(payload: FactInput, request: Request) -> dict:
     return {"saved": request.app.state.long_term_memory.remember(
-        payload.category, payload.key, payload.value, source="user"
+        payload.category, payload.key, payload.value, source="user",
+        classification=payload.classification,
     )}

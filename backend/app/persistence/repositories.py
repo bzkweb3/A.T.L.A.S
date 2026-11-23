@@ -93,15 +93,19 @@ class MemoryRepository:
     def __init__(self, database: SQLiteDatabase) -> None:
         self.database = database
 
-    def remember(self, category: str, key: str, value: str, source: str) -> None:
+    def remember(
+        self, category: str, key: str, value: str, source: str, classification: str = "personal"
+    ) -> None:
         now = datetime.now(timezone.utc).isoformat()
         with self.database.connection() as connection:
             connection.execute(
-                """INSERT INTO user_facts(category, fact_key, fact_value, source, created_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?)
+                """INSERT INTO user_facts
+                   (category, fact_key, fact_value, source, classification, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(category, fact_key) DO UPDATE SET
-                     fact_value=excluded.fact_value, source=excluded.source, updated_at=excluded.updated_at""",
-                (category, key, value, source, now, now),
+                     fact_value=excluded.fact_value, source=excluded.source,
+                     classification=excluded.classification, updated_at=excluded.updated_at""",
+                (category, key, value, source, classification, now, now),
             )
 
     def forget(self, category: str, key: str) -> bool:
@@ -114,7 +118,7 @@ class MemoryRepository:
     def list_facts(self) -> list[dict]:
         with self.database.connection() as connection:
             rows = connection.execute(
-                "SELECT category, fact_key AS key, fact_value AS value, source, updated_at "
+                "SELECT category, fact_key AS key, fact_value AS value, source, classification, updated_at "
                 "FROM user_facts ORDER BY category, fact_key"
             ).fetchall()
         return [dict(row) for row in rows]
