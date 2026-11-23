@@ -35,7 +35,7 @@ async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
     if provider is None:
         raise HTTPException(
             status_code=503,
-            detail="A integração de IA não está configurada. Configure OPENAI_API_KEY.",
+            detail="A integração de IA não está configurada. Configure a chave do provedor selecionado.",
         )
 
     messages = [
@@ -45,10 +45,10 @@ async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
 
     try:
         reply = await provider.generate_reply(messages)
-    except AIProviderError:
+    except AIProviderError as exc:
         raise HTTPException(
-            status_code=502,
-            detail="O A.T.L.A.S. não conseguiu concluir a solicitação de IA.",
+            status_code=exc.http_status,
+            detail=str(exc),
         ) from None
 
     return ChatResponse(reply=reply, model=request.app.state.settings.ai_model)
