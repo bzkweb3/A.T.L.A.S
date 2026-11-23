@@ -1,10 +1,9 @@
 """Google Gemini implementation of the provider-independent contract."""
 
-import asyncio
 import logging
 
 from google import genai
-from google.genai import errors
+from google.genai import errors, types
 
 from backend.app.core.config import Settings
 from backend.app.intelligence.provider import AIProviderError, ChatMessage
@@ -17,10 +16,6 @@ ATLAS_INSTRUCTIONS = (
     "Não afirme ter executado ações externas que não foram realmente realizadas. "
     "Respeite limites, permissões e solicitações de confirmação do usuário."
 )
-
-_RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
-_MAX_ATTEMPTS = 3
-
 
 def _provider_error(status_code: int | None) -> AIProviderError:
     if status_code == 404:
@@ -41,7 +36,7 @@ def _provider_error(status_code: int | None) -> AIProviderError:
         )
     if status_code in {500, 502, 503, 504}:
         return AIProviderError(
-            "O serviço Gemini está temporariamente indisponível. O A.T.L.A.S. tentou novamente automaticamente; tente de novo em alguns instantes.",
+            "O serviço Gemini está temporariamente indisponível. Nenhuma nova tentativa automática será feita; tente novamente em alguns instantes.",
             http_status=503,
         )
     return AIProviderError(
@@ -68,37 +63,37 @@ class GeminiProvider:
             for message in messages
         ]
 
-        async with genai.Client(api_key=self._api_key).aio as client:
-            for attempt in range(_MAX_ATTEMPTS):
-                try:
-                    response = await client.models.generate_content(
-                        model=self._model,
-                        contents=contents,
-                        config={"system_instruction": ATLAS_INSTRUCTIONS},
-                    )
-                    answer = (response.text or "").strip()
-                    if not answer:
-                        raise AIProviderError("O Gemini retornou uma resposta vazia.")
-                    return answer
-                except errors.APIError as exc:
-                    status_code = getattr(exc, "code", None)
-                    if status_code in _RETRYABLE_STATUS_CODES and attempt < _MAX_ATTEMPTS - 1:
-                        wait_seconds = 2 ** attempt
-                        logger.warning(
-                            "Gemini retornou HTTP %s. Nova tentativa %s/%s em %s segundo(s).",
-                            status_code,
-                            attempt + 2,
-                            _MAX_ATTEMPTS,
-                            wait_seconds,
-                        )
-                        await asyncio.sleep(wait_seconds)
-                        continue
+        # 12-second request timeout and one total attempt prevent stacked SDK/app retries.
+        http_options = types.HttpOptions(
+            timeout=12_000,
+            retry_options=types.HttpRetryOptions(attempts=1),
+        )
+        try:
+            async with genai.Client(
+                api_key=self._api_key,
+                http_options=http_options,
+            ).aio as client:
+                response = await client.models.generate_content(
+                    model=self._model,
+                    contents=contents,
+                    config={"system_instruction": ATLAS_INSTRUCTIONS},
+                )
+        except errors.APIError as exc:
+            status_code = getattr(exc, "code", None)
+            logger.warning(
+                "Falha na API Gemini; modelo=%s, código_http=%s.",
+                self._model,
+                status_code,
+            )
+            raise _provider_error(status_code) from None
+        except (TimeoutError, OSError) as exc:
+            logger.warning("Timeout ou falha de rede ao chamar Gemini: %s", type(exc).__name__)
+            raise AIProviderError(
+                "O Gemini demorou mais de 12 segundos ou está inacessível. Tente novamente.",
+                http_status=504,
+            ) from None
 
-                    logger.exception(
-                        "Falha na API Gemini; modelo=%s, código_http=%s.",
-                        self._model,
-                        status_code,
-                    )
-                    raise _provider_error(status_code) from None
-
-        raise AIProviderError("O Gemini não respondeu após as tentativas automáticas.", http_status=503)
+        answer = (response.text or "").strip()
+        if not answer:
+            raise AIProviderError("O Gemini retornou uma resposta vazia.")
+        return answer
