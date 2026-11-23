@@ -32,6 +32,14 @@ async def list_long_term_memory(request: Request) -> dict:
     return {"facts": facts, "count": len(facts)}
 
 
+@memory_router.delete("/facts/{category}/{key}")
+async def delete_memory_fact(category: str, key: str, request: Request) -> dict:
+    deleted = request.app.state.long_term_memory.forget(category, key)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Informação não encontrada na memória.")
+    return {"deleted": True, "category": category, "key": key}
+
+
 @memory_router.post("/facts")
 async def save_memory_fact(payload: FactInput, request: Request) -> dict:
     return {"saved": request.app.state.long_term_memory.remember(
