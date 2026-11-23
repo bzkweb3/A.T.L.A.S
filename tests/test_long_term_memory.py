@@ -104,3 +104,32 @@ def test_deleting_unknown_memory_fact_returns_404():
     client = TestClient(create_app(settings=Settings(environment="test"), ai_provider=MemoryAwareProvider()))
     response = client.delete("/api/memory/facts/profile/unknown")
     assert response.status_code == 404
+
+
+def test_explicit_preferences_and_decisions_are_saved():
+    from backend.app.core.long_term_memory import LongTermMemory
+
+    memory = LongTermMemory(":memory:")
+    memory.extract_explicit_facts("Prefiro respostas objetivas. Decidi que o A.T.L.A.S. será híbrido.")
+    facts = {(fact["category"], fact["key"]): fact["value"] for fact in memory.list_facts()}
+
+    assert facts[("preferences", "general")] == "respostas objetivas"
+    assert facts[("decisions", "latest")] == "o A.T.L.A.S"
+
+
+def test_named_project_context_is_saved_and_categorized():
+    from backend.app.core.long_term_memory import LongTermMemory
+
+    memory = LongTermMemory(":memory:")
+    memory.extract_explicit_facts(
+        "No projeto A.T.L.A.S., estamos desenvolvendo memória contextual."
+    )
+
+    facts = memory.list_facts()
+    assert any(
+        fact["category"] == "projects"
+        and fact["key"] == "a_t_l_a_s"
+        and fact["value"] == "desenvolvendo memória contextual"
+        for fact in facts
+    )
+    assert "Projetos / a_t_l_a_s" in memory.build_context()
