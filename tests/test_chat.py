@@ -74,3 +74,42 @@ def test_existing_root_and_health_routes_are_preserved():
 
     assert client.get("/").json()["sistema"] == "A.T.L.A.S."
     assert client.get("/health").json()["status"] == "online"
+
+
+
+def test_diagnostics_reports_backend_and_configuration_without_calling_provider():
+    app = create_app(
+        settings=Settings(
+            environment="test",
+            ai_provider="gemini",
+            gemini_api_key="test-key",
+            ai_model="test-model",
+        ),
+        ai_provider=FakeProvider(),
+    )
+    client = TestClient(app)
+
+    response = client.get("/api/diagnostics")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["backend"] == "online"
+    assert data["provider"] == "gemini"
+    assert data["model"] == "test-model"
+    assert data["credential_configured"] is True
+    assert data["provider_initialized"] is True
+    assert data["ai_connection"] == "not_tested"
+
+
+def test_diagnostics_connection_test_uses_provider():
+    app = create_app(
+        settings=Settings(environment="test", ai_provider="gemini", ai_model="test-model"),
+        ai_provider=FakeProvider(),
+    )
+    client = TestClient(app)
+
+    response = client.post("/api/diagnostics/test")
+
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+    assert response.json()["message"] == "Conexão com o provedor de IA confirmada."
