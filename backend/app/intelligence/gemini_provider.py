@@ -6,7 +6,7 @@ from google import genai
 from google.genai import errors, types
 
 from backend.app.core.config import Settings
-from backend.app.intelligence.provider import AIProviderError, ChatMessage
+from backend.app.intelligence.provider import AIProviderError, AIReply, ChatMessage
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ ATLAS_INSTRUCTIONS = (
     "Respeite limites, permissões e solicitações de confirmação do usuário."
 )
 
-# Ordered by preference: primary model first, then lighter fallback models.
+# Ordered by preference for the current development stage.
 DEFAULT_FALLBACK_MODELS = (
     "gemini-3.5-flash-lite",
     "gemini-2.5-flash-lite",
@@ -63,6 +63,10 @@ class GeminiProvider:
         self._models = _model_sequence(self._model)
 
     async def generate_reply(self, messages: list[ChatMessage]) -> str:
+        result = await self.generate_reply_with_metadata(messages)
+        return result.content
+
+    async def generate_reply_with_metadata(self, messages: list[ChatMessage]) -> AIReply:
         contents = [
             {
                 "role": "model" if message.role == "assistant" else "user",
@@ -70,9 +74,6 @@ class GeminiProvider:
             }
             for message in messages
         ]
-
-        # Each model gets a bounded request; SDK retries are disabled to keep
-        # failover predictable and prevent hidden, stacked retry delays.
         http_options = types.HttpOptions(
             timeout=10_000,
             retry_options=types.HttpRetryOptions(attempts=1),
@@ -94,13 +95,20 @@ class GeminiProvider:
                         )
                         answer = (response.text or "").strip()
                         if answer:
-                            if model != self._model:
+                            fallback_used = model != self._model
+                            if fallback_used:
                                 logger.warning(
                                     "Gemini fallback acionado; modelo_principal=%s, modelo_utilizado=%s.",
                                     self._model,
                                     model,
                                 )
-                            return answer
+                            return AIReply(
+                                content=answer,
+                                provider="gemini",
+                                model=model,
+                                fallback_used=fallback_used,
+                                primary_model=self._model,
+                            )
                         failures.append(f"{model}: resposta vazia")
                         logger.warning("Gemini retornou resposta vazia; modelo=%s.", model)
                     except errors.APIError as exc:
@@ -111,9 +119,7 @@ class GeminiProvider:
                             model,
                             status_code,
                         )
-                        if status_code in {401, 403}:
-                            raise _provider_error(status_code) from None
-                        if status_code not in RETRYABLE_STATUS_CODES:
+                        if status_code in {401, 403} or status_code not in RETRYABLE_STATUS_CODES:
                             raise _provider_error(status_code) from None
                         failures.append(f"{model}: HTTP {status_code}")
                     except (TimeoutError, OSError) as exc:
