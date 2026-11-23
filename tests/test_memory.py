@@ -3,7 +3,12 @@ from fastapi.testclient import TestClient
 from backend.app.core.config import Settings
 from backend.app.main import create_app
 
-from tests.test_chat import FakeProvider
+from backend.app.intelligence.provider import ChatMessage
+
+
+class FakeProvider:
+    async def generate_reply(self, messages: list[ChatMessage]) -> str:
+        return "Olá! Estou funcionando."
 
 
 def test_chat_is_saved_and_can_be_restored_after_app_restart(tmp_path):
