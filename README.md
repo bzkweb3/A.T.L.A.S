@@ -59,6 +59,8 @@ Os testes de chat utilizam um provedor simulado e não fazem chamadas pagas às 
 - `/`: status básico do sistema.
 - `/health`: verificação de disponibilidade.
 - `/api/chat`: endpoint de conversa.
+- `/api/diagnostics`: diagnóstico local sem chamada ao provedor.
+- `/api/diagnostics/test`: teste real da conexão com IA, executado sob demanda.
 - `/docs`: documentação interativa da API.
 
 ## Configuração da IA
