@@ -31,3 +31,33 @@ def test_name_is_extracted_from_explicit_user_statement():
     assert response.status_code == 200
     facts = client.get("/api/memory").json()["facts"]
     assert any(f["key"] == "name" and f["value"] == "Brendo" for f in facts)
+
+
+
+def test_personal_memory_questions_are_answered_without_calling_ai():
+    class MustNotRunProvider:
+        async def generate_reply(self, messages):
+            raise AssertionError("Pergunta simples de memória não deve chamar a IA.")
+
+    client = TestClient(create_app(
+        settings=Settings(environment="test"),
+        ai_provider=MustNotRunProvider(),
+    ))
+    client.post("/api/memory/facts", json={
+        "category": "profile", "key": "name", "value": "Sr. Brendo"
+    })
+    client.post("/api/memory/facts", json={
+        "category": "profile", "key": "location", "value": "Cariacica, Espírito Santo"
+    })
+
+    name = client.post("/api/chat", json={
+        "messages": [{"role": "user", "content": "sabe meu nome?"}]
+    })
+    location = client.post("/api/chat", json={
+        "messages": [{"role": "user", "content": "onde eu moro?"}]
+    })
+
+    assert name.status_code == 200
+    assert "Sr. Brendo" in name.json()["reply"]
+    assert location.status_code == 200
+    assert "Cariacica" in location.json()["reply"]
