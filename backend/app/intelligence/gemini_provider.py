@@ -90,7 +90,7 @@ class GeminiProvider:
             if self._cached_models and now - self._catalog_checked_at < MODEL_CATALOG_TTL_SECONDS:
                 return self._cached_models
             try:
-                pager = await client.aio.models.list(config={"page_size": 100})
+                pager = await client.models.list(config={"page_size": 100})
                 discovered: list[str] = []
                 async for item in pager:
                     actions = getattr(item, "supported_actions", None) or []
