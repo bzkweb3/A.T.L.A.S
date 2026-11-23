@@ -110,11 +110,11 @@ def test_explicit_preferences_and_decisions_are_saved():
     from backend.app.core.long_term_memory import LongTermMemory
 
     memory = LongTermMemory(":memory:")
-    memory.extract_explicit_facts("Prefiro respostas objetivas. Decidi que o A.T.L.A.S. será híbrido.")
+    memory.extract_explicit_facts("Prefiro respostas objetivas. Decidi que o sistema será híbrido.")
     facts = {(fact["category"], fact["key"]): fact["value"] for fact in memory.list_facts()}
 
     assert facts[("preferences", "general")] == "respostas objetivas"
-    assert facts[("decisions", "latest")] == "o A.T.L.A.S"
+    assert facts[("decisions", "latest")] == "o sistema será híbrido"
 
 
 def test_named_project_context_is_saved_and_categorized():
