@@ -81,3 +81,26 @@ def test_explicit_location_is_saved_and_acknowledged_without_ai():
     assert "Cariacica" in response.json()["reply"]
     facts = client.get("/api/memory").json()["facts"]
     assert any(f["key"] == "location" and f["value"] == "Cariacica, no Espírito Santo" for f in facts)
+
+
+def test_memory_fact_can_be_deleted_without_removing_other_facts():
+    client = TestClient(create_app(settings=Settings(environment="test"), ai_provider=MemoryAwareProvider()))
+    client.post("/api/memory/facts", json={
+        "category": "profile", "key": "name", "value": "Brendo"
+    })
+    client.post("/api/memory/facts", json={
+        "category": "preferences", "key": "communication", "value": "Respostas objetivas"
+    })
+
+    deleted = client.delete("/api/memory/facts/profile/name")
+
+    assert deleted.status_code == 200
+    remaining = client.get("/api/memory").json()["facts"]
+    assert not any(f["category"] == "profile" and f["key"] == "name" for f in remaining)
+    assert any(f["category"] == "preferences" and f["key"] == "communication" for f in remaining)
+
+
+def test_deleting_unknown_memory_fact_returns_404():
+    client = TestClient(create_app(settings=Settings(environment="test"), ai_provider=MemoryAwareProvider()))
+    response = client.delete("/api/memory/facts/profile/unknown")
+    assert response.status_code == 404
