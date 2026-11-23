@@ -39,7 +39,10 @@ def test_chat_returns_provider_response_without_real_api_call():
     assert response.status_code == 200
     assert response.json() == {
         "reply": "Olá! Estou funcionando.",
+        "provider": "gemini",
         "model": "fake-model",
+        "fallback_used": False,
+        "primary_model": "fake-model",
     }
 
 
