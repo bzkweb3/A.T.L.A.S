@@ -29,10 +29,10 @@ class SQLiteDatabase:
     def connection(self) -> Iterator[sqlite3.Connection]:
         """Yield a configured connection and reliably commit, roll back, and close it."""
         connection = sqlite3.connect(self.database_path, uri=self._uri, timeout=10)
-        connection.row_factory = sqlite3.Row
-        connection.execute("PRAGMA foreign_keys = ON")
-        connection.execute("PRAGMA busy_timeout = 10000")
         try:
+            connection.row_factory = sqlite3.Row
+            connection.execute("PRAGMA foreign_keys = ON")
+            connection.execute("PRAGMA busy_timeout = 10000")
             with connection:
                 yield connection
         finally:
@@ -41,6 +41,10 @@ class SQLiteDatabase:
     def initialize_schema(self) -> None:
         """Apply every schema upgrade required by the current application version."""
         with self.connection() as connection:
+            # The sqlite3 connection context manager only commits an open
+            # transaction; DDL alone does not reliably start one. Begin
+            # explicitly so schema changes and user_version roll back together.
+            connection.execute("BEGIN IMMEDIATE")
             current_version = int(connection.execute("PRAGMA user_version").fetchone()[0])
             if current_version > _SCHEMA_VERSION:
                 raise RuntimeError(
