@@ -44,12 +44,50 @@ async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
 
     latest_user_text = next((m.content for m in reversed(payload.messages) if m.role == "user"), "")
     request.app.state.long_term_memory.extract_explicit_facts(latest_user_text)
-    context = request.app.state.long_term_memory.build_context()
+    memory = request.app.state.long_term_memory
+    context = memory.build_context()
+    facts = {(fact["category"], fact["key"]): fact["value"] for fact in memory.list_facts()}
+
+    # Answer simple personal-memory questions deterministically. This avoids
+    # asking the model to rediscover facts already stored in the user's profile.
+    normalized_question = " ".join(latest_user_text.lower().strip(" ?!.").split())
+    direct_reply = None
+    asks_name = any(term in normalized_question for term in (
+        "sabe meu nome", "qual meu nome", "como eu me chamo", "como me chamo",
+        "lembra meu nome", "lembra como me chamo",
+    ))
+    asks_location = any(term in normalized_question for term in (
+        "onde eu moro", "onde moro", "qual minha cidade", "qual cidade eu moro",
+        "lembra onde moro", "lembra onde eu moro",
+    ))
+    if asks_name:
+        name = facts.get(("profile", "preferred_name")) or facts.get(("profile", "name"))
+        direct_reply = (
+            f"Sei, {name}. 😊" if name else
+            "Ainda não tenho seu nome registrado. Como gostaria que eu chamasse você?"
+        )
+    elif asks_location:
+        location = facts.get(("profile", "location"))
+        direct_reply = (
+            f"Você me informou que mora em {location}." if location else
+            "Ainda não tenho sua localização registrada. Se quiser, pode me contar."
+        )
+
     messages = [ChatMessage(role=m.role, content=m.content) for m in payload.messages]
     if context:
         messages.insert(0, ChatMessage(role="system", content=context))
 
     try:
+        if direct_reply is not None:
+            conversation_id = request.app.state.memory.save_exchange(
+                [m.model_dump() for m in payload.messages] + [{"role": "assistant", "content": direct_reply}],
+                conversation_id=payload.conversation_id, provider="atlas-memory",
+                model="local-memory", fallback_used=False,
+            )
+            return ChatResponse(
+                reply=direct_reply, provider="atlas-memory", model="local-memory",
+                fallback_used=False, primary_model=None, conversation_id=conversation_id,
+            )
         metadata_method = getattr(provider, "generate_reply_with_metadata", None)
         if callable(metadata_method):
             result = await metadata_method(messages)
