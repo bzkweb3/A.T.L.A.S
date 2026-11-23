@@ -10,6 +10,17 @@ class ChatMessage:
     content: str
 
 
+@dataclass(frozen=True, slots=True)
+class AIReply:
+    """A generated answer plus trustworthy execution metadata."""
+
+    content: str
+    provider: str
+    model: str
+    fallback_used: bool = False
+    primary_model: str | None = None
+
+
 class AIProviderError(Exception):
     """Raised when an AI provider cannot complete a request."""
 
