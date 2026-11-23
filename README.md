@@ -6,7 +6,7 @@ Sua inteligência, em qualquer lugar.
 
 ## Primeira versão funcional
 
-Esta etapa inclui uma interface web de conversa, uma camada de provedores de IA e memória persistente local. O Gemini é o provedor padrão para desenvolvimento; a integração OpenAI permanece disponível como alternativa.
+Esta etapa inclui uma interface web de conversa, uma camada de provedores de IA, histórico local e memória persistente de longo prazo. O Gemini é o provedor padrão para desenvolvimento; a integração OpenAI permanece disponível como alternativa.
 
 ### Requisitos
 
@@ -58,7 +58,7 @@ Os testes de chat utilizam um provedor simulado e não fazem chamadas pagas às 
 - `/app`: interface inicial.
 - `/`: status básico do sistema.
 - `/health`: verificação de disponibilidade.
-- `/api/chat`: endpoint de conversa com gravação automática.\n- `/api/conversations`: lista conversas recentes.\n- `/api/conversations/{id}`: recupera uma conversa e suas mensagens.
+- `/api/chat`: endpoint de conversa com gravação automática.\n- `/api/conversations`: lista conversas recentes.\n- `/api/conversations/{id}`: recupera uma conversa e suas mensagens.\n- `/api/memory`: lista fatos persistentes do perfil.\n- `/api/memory/facts`: registra um fato explicitamente informado pelo usuário.
 - `/api/diagnostics`: diagnóstico local sem chamada ao provedor.
 - `/api/diagnostics/test`: teste real da conexão com IA, executado sob demanda.
 - `/docs`: documentação interativa da API.
@@ -75,4 +75,4 @@ O arquivo `.env` não deve ser versionado. O repositório contém apenas `.env.e
 
 ## Limites desta versão
 
-A memória desta etapa armazena conversas e mensagens localmente em SQLite. Ela ainda não representa memória semântica de longo prazo, perfil de preferências ou recuperação inteligente de fatos entre conversas. Autenticação e agentes executores serão implementados em etapas posteriores. Ações externas não são executadas por esta versão.
+A memória mantém o histórico e também registra fatos explícitos do perfil do usuário em SQLite. Na primeira abertura, a interface solicita o nome preferido. O chat injeta os fatos salvos como contexto interno em novas conversas. A API GET /api/memory lista os fatos e POST /api/memory/facts permite registrar novos fatos. A extração automática inicial reconhece declarações explícitas como 'meu nome é ...', 'pode me chamar de ...' e 'eu moro em ...'. Autenticação e agentes executores serão implementados em etapas posteriores. Ações externas não são executadas por esta versão.
