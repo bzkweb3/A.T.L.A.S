@@ -138,7 +138,14 @@ class GeminiProvider:
                         response = await client.models.generate_content(
                             model=model,
                             contents=contents,
-                            config={"system_instruction": ATLAS_INSTRUCTIONS},
+                            config={
+                                "system_instruction": (
+                                    ATLAS_INSTRUCTIONS
+                                    + f"\n\nMETADADOS INTERNOS DE EXECUÇÃO: o modelo que está gerando esta resposta é {model}. "
+                                    + "Se o usuário perguntar qual modelo está respondendo, informe exatamente esse identificador. "
+                                    + "Não diga apenas o nome da família Gemini e não invente versões."
+                                )
+                            },
                         )
                         answer = (response.text or "").strip()
                         if answer:
