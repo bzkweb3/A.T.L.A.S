@@ -3,165 +3,461 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#080d18">
+  <meta name="theme-color" content="#030713">
   <title>A.T.L.A.S. — Sua inteligência, em qualquer lugar.</title>
   <style>
-    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:#080d18; color:#e8eefb; }
-    * { box-sizing:border-box; }
-    body { margin:0; min-height:100vh; background:radial-gradient(ellipse at 50% 5%,#142a49 0,transparent 42%),#080d18; }
-    .shell { width:min(920px,100%); min-height:100vh; margin:auto; padding:28px 22px; display:flex; flex-direction:column; }
-    header { display:flex; align-items:center; justify-content:space-between; gap:16px; border-bottom:1px solid #1d2b42; padding:4px 0 20px; }
-    .brand { display:flex; align-items:center; gap:13px; }
-    .mark { width:42px; height:42px; border:1px solid #4c9cff; border-radius:14px; display:grid; place-items:center; color:#8dc5ff; box-shadow:0 0 28px #2379d744,inset 0 0 18px #2379d722; font-size:22px; }
-    h1 { font-size:17px; letter-spacing:.18em; margin:0; }
-    .tagline { color:#91a4c2; font-size:12px; margin-top:4px; }
-    .status { color:#9ac8ff; font-size:12px; border:1px solid #29496d; background:#10213a; border-radius:99px; padding:7px 11px; white-space:nowrap; }
-    main { flex:1; display:flex; flex-direction:column; padding:52px 0 24px; }
-    .intro { text-align:center; margin:0 auto 34px; max-width:620px; }
-    .orb { width:94px; height:94px; margin:0 auto 22px; border-radius:50%; border:1px solid #4b9cff88; display:grid; place-items:center; background:radial-gradient(circle,#2766a866 0,#142c4d88 42%,#0a1425 72%); box-shadow:0 0 55px #2589ff33,inset 0 0 25px #5eb4ff22; position:relative; }
-    .orb:before,.orb:after { content:""; position:absolute; border:1px solid #3c8ddd55; border-radius:50%; inset:-9px; }
-    .orb:after { inset:-18px; border-color:#3c8ddd22; }
-    .orb span { font-size:34px; color:#a9d7ff; text-shadow:0 0 22px #53aaff; }
-    h2 { font-size:clamp(25px,5vw,36px); letter-spacing:-.035em; margin:0 0 12px; }
-    .intro p { color:#91a2bd; font-size:14px; line-height:1.7; margin:0; }
-    .chat { width:100%; max-width:760px; margin:0 auto; flex:1; display:flex; flex-direction:column; gap:14px; }
-    #messages { flex:1; min-height:170px; max-height:48vh; overflow:auto; display:flex; flex-direction:column; gap:12px; padding:4px 2px 16px; }
-    .bubble { max-width:min(82%,650px); padding:13px 16px; border-radius:16px; font-size:14px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
-    .user { align-self:flex-end; background:#18375c; border:1px solid #2c5c8e; border-bottom-right-radius:5px; }
-    .assistant { align-self:flex-start; background:#101b2c; border:1px solid #233650; border-bottom-left-radius:5px; }
-    .model-note { color:#8ea8c8; font-size:10px; margin-top:7px; opacity:.9; }
-    .fallback-note { color:#e7bd72; }
-    .composer { border:1px solid #2b405d; border-radius:18px; padding:10px; display:flex; gap:10px; background:#0d1726; box-shadow:0 14px 50px #0005; }
-    textarea { flex:1; resize:vertical; min-height:48px; max-height:140px; border:0; outline:0; background:transparent; color:#eef5ff; padding:12px 10px; font:inherit; font-size:14px; }
-    textarea::placeholder { color:#71839e; }
-    button { align-self:flex-end; border:0; border-radius:12px; padding:0 18px; min-height:46px; color:#071322; background:linear-gradient(135deg,#8acaff,#4d9fff); font-weight:700; cursor:pointer; }
-    button:disabled { opacity:.5; cursor:wait; }
-    .hint { color:#667b99; text-align:center; font-size:11px; margin:10px 0 0; }
-    .diagnostics { width:100%; max-width:760px; margin:0 auto 22px; border:1px solid #233650; border-radius:16px; background:#0d1726cc; padding:16px; }
-    .diagnostics-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
-    .diagnostics h3 { font-size:13px; letter-spacing:.08em; margin:0; color:#cfe4ff; }
-    .diagnostics-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
-    .metric { background:#101e31; border:1px solid #203650; border-radius:10px; padding:10px; min-width:0; }
-    .metric small { display:block; color:#7890af; font-size:10px; margin-bottom:5px; }
-    .metric strong { display:block; color:#dceaff; font-size:12px; overflow-wrap:anywhere; }
-    .diagnostic-message { color:#91a4c2; font-size:11px; line-height:1.5; margin:12px 0 0; }
-    .diagnostic-actions { display:flex; align-items:center; gap:10px; }
-    .diagnostic-actions button { min-height:34px; padding:0 12px; font-size:11px; }
-    .diagnostic-actions .secondary { color:#b9d8ff; background:#142943; border:1px solid #315477; }
-    .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#d6a64f; margin-right:6px; }
-    .dot.good { background:#54d69a; } .dot.bad { background:#ef7777; }
-    .error { color:#ffb5b5; border-color:#70404a; }
-    footer { color:#526680; font-size:11px; text-align:center; padding-top:20px; }
-    @media(max-width:600px) { .shell{padding:18px 14px}.status{font-size:10px}.intro{margin-bottom:24px}main{padding-top:36px}#messages{max-height:52vh}.bubble{max-width:92%}button{padding:0 13px}.diagnostics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.diagnostics-head{align-items:flex-start;flex-direction:column}.diagnostic-actions{width:100%}.diagnostic-actions button{flex:1} }
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #030713; color: #e8efff;
+      --cyan: #65caff; --cyan-soft: #b7e7ff; --blue: #397cf5;
+      --muted: #8698b7; --line: rgba(91, 124, 183, .2);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; width: 100%; height: 100vh; height: 100dvh; min-width: 320px; overflow: hidden;
+      background: radial-gradient(ellipse at 50% 44%, rgba(35, 75, 155, .13), transparent 42%), #030713; }
+    button, textarea { font: inherit; }
+    button { color: inherit; }
+    .app-shell { width: min(1440px, 100%); height: 100vh; height: 100dvh; min-height: 0; margin: auto; padding: 0 40px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+    .topbar { height: 70px; flex: 0 0 70px; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); }
+    .identity { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .brand-mark { width: 36px; height: 36px; position: relative; display: grid; place-items: center; color: var(--cyan); font-size: 24px; border: 1px solid rgba(102, 184, 255, .46); transform: rotate(45deg); box-shadow: 0 0 25px rgba(49, 123, 255, .15), inset 0 0 12px rgba(49, 123, 255, .12); }
+    .brand-mark span { transform: rotate(-45deg); }
+    .brand-copy h1 { margin: 0; font-size: 15px; letter-spacing: .25em; font-weight: 700; }
+    .top-actions { display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
+    .ghost-button { min-height: 36px; padding: 0 12px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #a0aec7; font-size: 11px; cursor: pointer; transition: color .2s, background .2s, border-color .2s; }
+    .ghost-button:hover, .ghost-button[aria-expanded="true"] { color: var(--cyan-soft); background: rgba(47, 104, 207, .12); border-color: rgba(89, 157, 255, .26); }
+    .ghost-button.logout { color: #8494ae; }
+    main { flex: 1 1 0; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+    .stage { flex: 1 1 0; width: 100%; max-width: 960px; min-width: 0; min-height: 0; margin: 0 auto; display: flex; flex-direction: column; overflow: hidden; }
+    .core-stage { flex: 1 1 auto; min-height: 220px; display: grid; place-items: center; transition: flex-basis .45s ease, min-height .45s ease; }
+    .core { width: 100%; height: 100%; display: grid; place-items: center; position: relative; }
+    .core-wrap { width: 220px; height: 220px; display: grid; place-items: center; position: relative; perspective: 900px; transition: transform .45s ease; }
+    .core-orbit, .core-orbit::before, .core-orbit::after { position: absolute; content: ""; border: 1px solid rgba(60, 117, 209, .2); border-radius: 50%; inset: 8px; }
+    .core-orbit { border-style: dashed; animation: orbit 42s linear infinite; transform: rotateX(67deg) rotateZ(-12deg); }
+    .core-orbit::before { inset: 10px; border-style: solid; border-color: rgba(58, 152, 241, .22); transform: rotateY(58deg); }
+    .core-orbit::after { inset: -12px; border-color: rgba(49, 116, 223, .12); transform: rotateX(35deg); }
+    .core-glow { position: absolute; width: 174px; height: 174px; border-radius: 50%; background: rgba(24, 84, 219, .2); filter: blur(34px); animation: breathe 5.6s ease-in-out infinite; }
+    .core-energy { z-index: 1; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 12px rgba(22, 132, 255, .2)); animation: energy-breathe 6s ease-in-out infinite; transform-origin: 50% 50%; }
+    .energy-sphere { fill: url(#atlasSphere); stroke: rgba(86, 197, 255, .62); stroke-width: 1.2; }
+    .energy-sheen { fill: url(#atlasSheen); opacity: .84; }
+    .energy-ribbon { fill: none; stroke: url(#atlasRibbon); stroke-linecap: round; stroke-width: 2.1; filter: url(#atlasGlow); stroke-dasharray: 16 8 4 7; animation: ribbon-flow 14s linear infinite; transform-origin: 50% 50%; }
+    .energy-ribbon.secondary { stroke: rgba(55, 156, 255, .78); stroke-width: 1.25; stroke-dasharray: 3 8 18 5; animation-duration: 19s; animation-direction: reverse; }
+    .energy-ribbon.fine { stroke: rgba(94, 204, 255, .78); stroke-width: .85; stroke-dasharray: 2 11 7 5; animation-duration: 11s; }
+    .energy-filament { fill: none; stroke: rgba(88, 196, 255, .68); stroke-width: 1; filter: url(#atlasGlow); stroke-dasharray: 90 24; animation: filament-pulse 4.5s ease-in-out infinite; }
+    .energy-filament.alt { stroke: rgba(66, 119, 255, .78); animation-delay: -2s; animation-duration: 5.5s; }
+    .energy-particle { fill: #c3eaff; filter: url(#atlasGlow); animation: particle-flicker 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .energy-particle.blue { fill: #438fff; animation-delay: -1.2s; }
+    .core-state, .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .core[data-state="receiving"] .core-orbit, .core[data-state="processing"] .core-orbit { animation-duration: 13s; border-color: rgba(83, 164, 255, .42); }
+    .core[data-state="receiving"] .core-energy { animation-duration: 2.2s; transform: scale(1.045); }
+    .core[data-state="receiving"] .energy-ribbon { animation-duration: 5s; stroke-width: 2.8; }
+    .core[data-state="processing"] .core-energy { animation-duration: 1.8s; }
+    .core[data-state="processing"] .energy-ribbon { animation-duration: 4.2s; }
+    .core[data-state="processing"] .energy-filament { animation-duration: 2.4s; }
+    .core[data-state="generating"] .core-energy { animation-duration: 2.8s; }
+    .core[data-state="generating"] .core-glow { animation-duration: 1.7s; }
+    .core[data-state="generating"] .energy-ribbon { animation-duration: 6s; }
+    .core[data-state="speaking"] .core-energy { animation: energy-speak 1.15s ease-in-out infinite; }
+    .core[data-state="speaking"] .energy-particle { animation-duration: .9s; }
+    .core[data-state="offline"] .core-orbit { animation-duration: 90s; opacity: .45; }
+    .core[data-state="offline"] .core-energy { opacity: .38; filter: saturate(.55) drop-shadow(0 0 8px rgba(77, 131, 192, .14)); animation-duration: 10s; }
+    .core[data-state="offline"] .energy-ribbon, .core[data-state="offline"] .energy-filament { stroke: rgba(103, 142, 184, .42); }
+    .core[data-state="offline"] .core-glow { background: rgba(36, 75, 131, .12); }
+    .stage:not(.has-messages) .core-stage { min-height: 0; }
+    .stage.has-messages .core-stage { flex: 0 0 160px; min-height: 0; }
+    .stage.has-messages .core-wrap { transform: scale(.7); }
+    .messages { flex: 1 1 0; min-height: 0; max-height: none; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 15px; padding: 16px 3px 22px; scrollbar-color: #243c68 transparent; scrollbar-width: thin; }
+    .messages > * { flex-shrink: 0; }
+    .bubble { max-width: min(82%, 720px); padding: 12px 16px; border-radius: 13px; font-size: 13px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; animation: rise .3s ease both; }
+    .bubble.user { align-self: flex-end; color: #e0eaff; border: 1px solid rgba(80, 129, 222, .27); border-right: 2px solid #4b91ff; border-radius: 13px 4px 13px 13px; background: linear-gradient(135deg, rgba(17, 35, 75, .88), rgba(8, 19, 47, .9)); }
+    .bubble.assistant { align-self: flex-start; color: #dce6f8; border: 1px solid rgba(100, 127, 177, .18); border-left: 2px solid rgba(91, 165, 255, .72); border-radius: 4px 13px 13px 13px; background: rgba(8, 15, 32, .78); }
+    .model-note { color: #8799b8; font-size: 10px; margin-top: 8px; letter-spacing: .02em; }
+    .fallback-note { color: #b6c9ed; }
+    .bubble.error { color: #e5a9bb; border-color: rgba(180, 103, 139, .38); }
+    .composer-wrap { flex: 0 0 auto; padding: 12px 0 calc(16px + env(safe-area-inset-bottom)); background: linear-gradient(to bottom, transparent, rgba(3, 7, 19, .96) 18%); }
+    .composer { width: min(900px, 100%); margin: auto; display: flex; align-items: flex-end; gap: 8px; padding: 8px 9px 8px 17px; border: 1px solid rgba(81, 124, 196, .3); border-radius: 16px; background: linear-gradient(145deg, rgba(12, 22, 47, .98), rgba(6, 13, 30, .99)); box-shadow: 0 14px 48px rgba(0, 0, 0, .38), 0 0 26px rgba(31, 81, 175, .1); transition: border-color .2s, box-shadow .2s; }
+    .composer:focus-within { border-color: rgba(89, 158, 255, .58); box-shadow: 0 14px 48px rgba(0, 0, 0, .4), 0 0 24px rgba(51, 112, 224, .17); }
+    textarea { flex: 1; min-width: 0; min-height: 44px; max-height: 140px; resize: vertical; border: 0; outline: 0; background: transparent; color: #e8efff; padding: 12px 2px 8px; font-size: 14px; line-height: 1.55; }
+    textarea::placeholder { color: #7485a4; }
+    .icon-button { width: 40px; height: 40px; flex: 0 0 40px; display: grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 11px; background: transparent; color: #91a8cf; cursor: pointer; transition: .2s; }
+    .icon-button:hover:not(:disabled) { color: var(--cyan-soft); border-color: rgba(89, 157, 255, .3); background: rgba(39, 83, 162, .16); }
+    .icon-button:disabled { color: #52617c; cursor: not-allowed; }
+    .icon-button.send { width: 43px; height: 43px; flex-basis: 43px; color: #061126; background: linear-gradient(140deg, #b7e7ff, #4f9cff); box-shadow: 0 0 18px rgba(65, 143, 255, .22); }
+    .icon-button.send:hover:not(:disabled) { color: #061126; filter: brightness(1.08); }
+    .drawer-backdrop { position: fixed; z-index: 10; inset: 0; display: flex; justify-content: flex-end; background: rgba(1, 4, 13, .72); backdrop-filter: blur(8px); }
+    .drawer-backdrop[hidden] { display: none; }
+    .drawer { width: min(410px, 100%); height: 100%; padding: 22px; border-left: 1px solid rgba(82, 130, 207, .26); background: linear-gradient(160deg, #0b1530, #060b1b 72%); box-shadow: -22px 0 80px rgba(0, 0, 0, .42); display: flex; flex-direction: column; animation: slide-in .25s ease both; }
+    .drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
+    .drawer-head h2 { margin: 0; color: #d6e4ff; font-size: 12px; font-weight: 600; letter-spacing: .12em; }
+    .drawer-body { flex: 1; overflow: auto; padding: 10px 0; scrollbar-color: #2c4777 transparent; scrollbar-width: thin; }
+    .drawer-empty { padding: 24px 8px; color: #8294b4; font-size: 12px; line-height: 1.7; }
+    .history-item { width: 100%; display: block; padding: 13px 11px; margin: 3px 0; text-align: left; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #b2c0dc; cursor: pointer; }
+    .history-item:hover, .history-item.active { border-color: rgba(85, 143, 226, .24); background: rgba(34, 73, 146, .17); color: #e1ebff; }
+    .history-item strong { display: block; font-size: 12px; font-weight: 500; line-height: 1.55; }
+    .history-item small { display: block; margin-top: 6px; color: #8192b1; font-size: 10px; }
+    .session-row { padding: 13px 0; border-bottom: 1px solid rgba(86, 119, 175, .14); }
+    .session-row p { margin: 0 0 10px; color: #b2c0dc; font-size: 12px; line-height: 1.6; }
+    .session-row small { display: block; color: #8294b4; font-size: 10px; }
+    .session-actions { display: flex; gap: 7px; }
+    .small-action { padding: 7px 9px; border: 1px solid rgba(83, 132, 207, .22); border-radius: 6px; background: rgba(29, 65, 133, .16); color: #a7c9ff; font-size: 10px; cursor: pointer; }
+    .small-action:hover { border-color: rgba(103, 174, 255, .48); color: #d0e6ff; }
+    .drawer-foot { padding-top: 14px; border-top: 1px solid var(--line); }
+    .drawer-foot .ghost-button { width: 100%; border-color: rgba(83, 132, 207, .22); }
+    @keyframes orbit { to { transform: rotate(360deg); } }
+    @keyframes breathe { 0%,100% { opacity: .42; transform: scale(.86); } 50% { opacity: .9; transform: scale(1.13); } }
+    @keyframes energy-breathe { 0%,100% { transform: scale(.965) rotate(-1deg); filter: brightness(.9); } 50% { transform: scale(1.025) rotate(1deg); filter: brightness(1.12); } }
+    @keyframes energy-speak { 0%,100% { transform: scale(.96); filter: brightness(.92); } 50% { transform: scale(1.055); filter: brightness(1.28); } }
+    @keyframes ribbon-flow { from { stroke-dashoffset: 0; transform: rotate(0deg) scale(.99); } to { stroke-dashoffset: -120px; transform: rotate(360deg) scale(1.025); } }
+    @keyframes filament-pulse { 0%,100% { opacity: .38; stroke-dashoffset: 0; } 50% { opacity: .95; stroke-dashoffset: -60px; } }
+    @keyframes particle-flicker { 0%,100% { opacity: .35; transform: scale(.72); } 48% { opacity: 1; transform: scale(1.35); } }
+    @keyframes rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slide-in { from { transform: translateX(18px); opacity: .7; } to { transform: translateX(0); opacity: 1; } }
+    @media (max-width: 760px) {
+      .app-shell { padding: 0 18px; }
+      .topbar { height: 64px; flex-basis: 64px; gap: 8px; }
+      .identity { gap: 10px; }
+      .brand-mark { width: 30px; height: 30px; font-size: 20px; }
+      .brand-copy h1 { font-size: 13px; }
+      .top-actions { gap: 1px; }
+      .ghost-button { min-height: 34px; padding: 0 9px; font-size: 10px; }
+      .core-wrap { width: 200px; height: 200px; }
+      .stage.has-messages .core-stage { flex-basis: 132px; }
+      .stage.has-messages .core-wrap { transform: scale(.62); }
+      .bubble { max-width: 94%; font-size: 13px; }
+      .composer-wrap { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+      .composer { gap: 3px; padding-left: 12px; }
+    }
+    @media (max-width: 420px) {
+      .app-shell { padding: 0 12px; }
+      .brand-mark { width: 27px; height: 27px; font-size: 18px; }
+      .brand-copy h1 { font-size: 12px; letter-spacing: .18em; }
+      .ghost-button { padding: 0 7px; font-size: 9px; }
+      .stage.has-messages .core-stage { flex-basis: 118px; }
+      .stage.has-messages .core-wrap { transform: scale(.55); }
+      textarea { font-size: 13px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <header>
-      <div class="brand"><div class="mark">✧</div><div><h1>A.T.L.A.S.</h1><div class="tagline">Sua inteligência, em qualquer lugar.</div></div></div>
-      <div class="status">● Núcleo local</div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="identity" aria-label="A.T.L.A.S.">
+        <div class="brand-mark" aria-hidden="true"><span>✧</span></div>
+        <div class="brand-copy"><h1>A.T.L.A.S.</h1></div>
+      </div>
+      <nav class="top-actions" aria-label="Controles da sessão">
+        <button class="ghost-button" id="showHistory" type="button" aria-expanded="false">Histórico</button>
+        <button class="ghost-button" id="showSessions" type="button" aria-expanded="false">Sessões</button>
+        <button class="ghost-button logout" id="logout" type="button">Sair</button>
+      </nav>
     </header>
+
     <main>
-      <section class="intro">
-        <div class="orb"><span>✧</span></div>
-        <h2>Como posso ajudar?</h2>
-        <p>Uma inteligência central. Uma experiência em evolução.<br>Converse com a primeira versão do A.T.L.A.S.</p>
-      </section>
-      <section class="diagnostics" aria-label="Diagnóstico do sistema">
-        <div class="diagnostics-head">
-          <h3>DIAGNÓSTICO DO SISTEMA</h3>
-          <div class="diagnostic-actions">
-            <button class="secondary" id="refreshStatus" type="button">Atualizar</button>
-            <button id="testConnection" type="button">Testar IA</button>
+      <section class="stage" id="stage" aria-label="Conversa com A.T.L.A.S.">
+        <section class="core-stage" aria-label="Núcleo de inteligência">
+          <div class="core" id="atlasCore" data-state="idle">
+            <div class="core-wrap" aria-hidden="true">
+              <div class="core-glow"></div><div class="core-orbit"></div>
+              <svg class="core-energy" viewBox="0 0 260 260" role="presentation">
+                <defs>
+                  <radialGradient id="atlasSphere" cx="37%" cy="28%" r="76%">
+                    <stop offset="0" stop-color="#164d91"/>
+                    <stop offset=".48" stop-color="#0b2854"/>
+                    <stop offset="1" stop-color="#061020"/>
+                  </radialGradient>
+                  <radialGradient id="atlasSheen" cx="35%" cy="25%" r="72%">
+                    <stop offset="0" stop-color="#54caff" stop-opacity=".32"/>
+                    <stop offset=".48" stop-color="#168eff" stop-opacity=".08"/>
+                    <stop offset="1" stop-color="#071326" stop-opacity="0"/>
+                  </radialGradient>
+                  <linearGradient id="atlasRibbon" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#83f5ff"/>
+                    <stop offset=".38" stop-color="#269bff"/>
+                    <stop offset=".7" stop-color="#465dff"/>
+                    <stop offset="1" stop-color="#67dfff"/>
+                  </linearGradient>
+                  <filter id="atlasGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2.2" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                  <clipPath id="atlasCoreClip"><circle cx="130" cy="130" r="82"/></clipPath>
+                </defs>
+                <circle class="energy-sphere" cx="130" cy="130" r="82"/>
+                <g clip-path="url(#atlasCoreClip)">
+                  <ellipse class="energy-sheen" cx="108" cy="99" rx="91" ry="86"/>
+                  <path class="energy-ribbon" d="M38 125 C55 66 90 58 112 91 C134 123 143 188 177 177 C209 167 221 112 195 83 C169 54 126 80 104 117 C82 155 60 191 92 205 C123 218 158 188 168 151 C180 105 150 72 121 73 C91 74 72 112 84 141 C96 172 130 181 151 160 C170 141 172 112 154 103 C137 94 120 108 120 128 C121 150 145 154 158 141"/>
+                  <path class="energy-ribbon secondary" d="M56 95 C83 54 131 68 144 103 C156 135 125 168 101 155 C76 141 88 105 111 101 C139 95 167 122 156 151 C146 180 111 193 82 173 C50 151 58 114 83 92 C111 66 173 76 193 111 C212 143 189 181 160 190"/>
+                  <path class="energy-ribbon fine" d="M48 149 C71 180 86 120 110 89 C131 62 173 69 182 99 C193 134 158 151 139 135 C122 120 136 99 153 104 C175 111 173 153 150 171 C123 192 88 178 75 151 C61 123 84 84 111 82"/>
+                  <path class="energy-filament" d="M47 118 C79 102 78 75 103 69 C133 62 152 86 168 103 C184 120 204 112 213 95"/>
+                  <path class="energy-filament alt" d="M56 170 C88 162 91 202 123 199 C153 196 158 168 180 158 C196 151 206 160 216 174"/>
+                  <circle class="energy-particle" cx="79" cy="93" r="2.2"/>
+                  <circle class="energy-particle blue" cx="177" cy="88" r="2.6"/>
+                  <circle class="energy-particle" cx="188" cy="149" r="1.8"/>
+                  <circle class="energy-particle blue" cx="103" cy="184" r="2"/>
+                  <circle class="energy-particle" cx="132" cy="78" r="1.5"/>
+                  <circle class="energy-particle blue" cx="70" cy="146" r="1.7"/>
+                  <circle class="energy-particle" cx="153" cy="191" r="1.5"/>
+                </g>
+                <circle cx="130" cy="130" r="82" fill="none" stroke="rgba(96,207,255,.38)" stroke-width=".8"/>
+              </svg>
+            </div>
+            <div class="core-state" id="coreState" role="status" aria-live="polite" aria-atomic="true">Aguardando interação</div>
           </div>
+        </section>
+        <div class="messages" id="messages" aria-live="polite" aria-relevant="additions text">
         </div>
-        <div class="diagnostics-grid">
-          <div class="metric"><small>BACKEND</small><strong id="backendStatus"><span class="dot"></span>Verificando</strong></div>
-          <div class="metric"><small>PROVEDOR</small><strong id="providerStatus">—</strong></div>
-          <div class="metric"><small>MODELO</small><strong id="modelStatus">—</strong></div>
-          <div class="metric"><small>CREDENCIAL</small><strong id="credentialStatus">—</strong></div>
-          <div class="metric"><small>INTEGRAÇÃO</small><strong id="aiStatus">Não testada</strong></div>
-          <div class="metric"><small>ÚLTIMA VERIFICAÇÃO</small><strong id="checkedAt">—</strong></div>
-        </div>
-        <p class="diagnostic-message" id="diagnosticMessage">O painel consulta a configuração local. O teste de IA só acontece quando você clicar em “Testar IA”.</p>
       </section>
-      <section class="chat" aria-label="Conversa com A.T.L.A.S.">
-        <div id="messages" aria-live="polite"></div>
+
+      <div class="composer-wrap">
         <form id="form" class="composer">
-          <textarea id="prompt" placeholder="Escreva sua mensagem para o A.T.L.A.S...." maxlength="8000" required></textarea>
-          <button id="send" type="submit">Enviar ↗</button>
+          <textarea id="prompt" placeholder="Fale com A.T.L.A.S. por texto…" maxlength="8000" rows="1" required aria-label="Mensagem para A.T.L.A.S."></textarea>
+          <button class="icon-button" id="voiceButton" type="button" disabled aria-label="Ativação por voz em desenvolvimento" title="Ativação por voz em desenvolvimento">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <button class="icon-button send" id="send" type="submit" aria-label="Enviar mensagem">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </form>
-        <p class="hint">Memória local ativa • Suas conversas ficam salvas neste dispositivo.</p>
-      </section>
+      </div>
     </main>
-    <footer>A.T.L.A.S. · Núcleo de inteligência em desenvolvimento</footer>
   </div>
+
+  <div class="drawer-backdrop" id="historyBackdrop" hidden>
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="historyHeading">
+      <div class="drawer-head"><div><h2 id="historyHeading">Histórico de conversas</h2></div><button class="ghost-button close-drawer" type="button" aria-label="Fechar histórico">Fechar</button></div>
+      <div class="drawer-body" id="historyList"><div class="drawer-empty">Carregando conversas…</div></div>
+      <div class="drawer-foot"><button class="ghost-button" id="newConversation" type="button">＋ &nbsp;Nova conversa</button></div>
+    </aside>
+  </div>
+
+  <div class="drawer-backdrop" id="sessionBackdrop" hidden>
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="sessionHeading">
+      <div class="drawer-head"><div><h2 id="sessionHeading">Sessões e dispositivos</h2></div><button class="ghost-button close-drawer" type="button" aria-label="Fechar sessões">Fechar</button></div>
+      <div class="drawer-body" id="sessionList"><div class="drawer-empty">Carregando sessões…</div></div>
+    </aside>
+  </div>
+
   <script>
     const form = document.getElementById("form");
     const promptInput = document.getElementById("prompt");
     const sendButton = document.getElementById("send");
     const messagesElement = document.getElementById("messages");
+    const stage = document.getElementById("stage");
+    const core = document.getElementById("atlasCore");
+    const coreState = document.getElementById("coreState");
     const history = [];
     let conversationId = localStorage.getItem("atlas_conversation_id");
-    const backendStatus = document.getElementById("backendStatus");
-    const providerStatus = document.getElementById("providerStatus");
-    const modelStatus = document.getElementById("modelStatus");
-    const credentialStatus = document.getElementById("credentialStatus");
-    const aiStatus = document.getElementById("aiStatus");
-    const checkedAt = document.getElementById("checkedAt");
-    const diagnosticMessage = document.getElementById("diagnosticMessage");
-    const testConnectionButton = document.getElementById("testConnection");
+    let chatInFlight = false;
+    let csrfToken = "";
+    const nativeFetch = window.fetch.bind(window);
+
+    window.fetch = async (input, options = {}) => {
+      const method = (options.method || "GET").toUpperCase();
+      if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
+        if (!csrfToken) {
+          const csrfResponse = await nativeFetch("/api/auth/csrf");
+          if (!csrfResponse.ok) throw new Error("Não foi possível validar a sessão local.");
+          csrfToken = (await csrfResponse.json()).csrf_token;
+        }
+        const headers = new Headers(options.headers || {});
+        headers.set("X-CSRF-Token", csrfToken);
+        options = { ...options, headers };
+      }
+      return nativeFetch(input, options);
+    };
+
+    function setCoreState(state, label) {
+      core.dataset.state = state;
+      coreState.textContent = label;
+    }
 
     function formatTime(value) {
       if (!value) return "—";
-      return new Date(value).toLocaleString("pt-BR");
+      return new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
     }
 
-    async function refreshDiagnostics() {
-      backendStatus.textContent = "Verificando...";
+    function showDrawer(kind) {
+      closeDrawers();
+      const backdrop = document.getElementById(kind === "history" ? "historyBackdrop" : "sessionBackdrop");
+      const button = document.getElementById(kind === "history" ? "showHistory" : "showSessions");
+      backdrop.hidden = false;
+      button.setAttribute("aria-expanded", "true");
+      if (kind === "history") loadHistory(); else loadSessions();
+    }
+
+    function closeDrawers() {
+      document.querySelectorAll(".drawer-backdrop").forEach((backdrop) => { backdrop.hidden = true; });
+      document.querySelectorAll(".top-actions button[aria-expanded]").forEach((button) => button.setAttribute("aria-expanded", "false"));
+    }
+
+    document.getElementById("showHistory").addEventListener("click", () => showDrawer("history"));
+    document.getElementById("showSessions").addEventListener("click", () => showDrawer("sessions"));
+    document.querySelectorAll(".close-drawer").forEach((button) => button.addEventListener("click", closeDrawers));
+    document.querySelectorAll(".drawer-backdrop").forEach((backdrop) => backdrop.addEventListener("click", (event) => {
+      if (event.target === backdrop) closeDrawers();
+    }));
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeDrawers(); });
+
+    document.getElementById("logout").addEventListener("click", async () => {
+      try { await fetch("/api/auth/logout", { method: "POST" }); } finally { location.replace("/login"); }
+    });
+
+    async function loadSessions() {
+      const list = document.getElementById("sessionList");
+      list.replaceChildren();
+      const loading = document.createElement("div"); loading.className = "drawer-empty"; loading.textContent = "Carregando sessões…"; list.append(loading);
       try {
-        const response = await fetch("/api/diagnostics");
-        if (!response.ok) throw new Error("Não foi possível consultar o diagnóstico.");
+        const response = await fetch("/api/auth/sessions");
+        if (response.status === 401) return location.replace("/login");
+        if (!response.ok) throw new Error("Falha ao consultar sessões");
         const data = await response.json();
-        backendStatus.innerHTML = '<span class="dot good"></span>Online';
-        providerStatus.textContent = data.provider.toUpperCase();
-        modelStatus.textContent = data.model;
-        credentialStatus.textContent = data.credential_configured ? "Configurada" : "Ausente";
-        aiStatus.textContent = data.provider_initialized ? "Configurada · não testada" : "Não inicializada";
-        checkedAt.textContent = formatTime(data.checked_at);
-        diagnosticMessage.textContent = "Backend disponível. A conexão real com a IA ainda não foi testada nesta sessão.";
-      } catch (error) {
-        backendStatus.innerHTML = '<span class="dot bad"></span>Indisponível';
-        diagnosticMessage.textContent = error.message;
+        list.replaceChildren();
+        if (!data.sessions.length) { const empty = document.createElement("div"); empty.className = "drawer-empty"; empty.textContent = "Nenhuma sessão ativa."; list.append(empty); return; }
+        data.sessions.forEach((session) => {
+          const row = document.createElement("div"); row.className = "session-row";
+          const info = document.createElement("p"); info.textContent = session.label;
+          const lastSeen = document.createElement("small"); lastSeen.textContent = `Último acesso: ${formatTime(session.last_seen_at)}`;
+          const expires = document.createElement("small"); expires.textContent = `Expira: ${formatTime(session.expires_at)}`;
+          const actions = document.createElement("div"); actions.className = "session-actions";
+          const end = document.createElement("button"); end.className = "small-action"; end.type = "button"; end.textContent = "Encerrar sessão";
+          end.addEventListener("click", async () => {
+            await fetch(`/api/auth/sessions/${encodeURIComponent(session.id)}`, { method: "DELETE" });
+            await loadSessions();
+          });
+          const revoke = document.createElement("button"); revoke.className = "small-action"; revoke.type = "button"; revoke.textContent = "Revogar dispositivo";
+          revoke.addEventListener("click", async () => {
+            await fetch(`/api/auth/devices/${encodeURIComponent(session.device_id)}`, { method: "DELETE" });
+            const check = await fetch("/api/auth/sessions");
+            if (check.status === 401) return location.replace("/login");
+            await loadSessions();
+          });
+          row.append(info, lastSeen, expires, actions); actions.append(end, revoke); list.append(row);
+        });
+      } catch (_) {
+        list.replaceChildren(); const error = document.createElement("div"); error.className = "drawer-empty"; error.textContent = "Não foi possível carregar as sessões."; list.append(error);
       }
     }
 
-    async function runConnectionTest() {
-      testConnectionButton.disabled = true;
-      testConnectionButton.textContent = "Testando...";
-      aiStatus.textContent = "Em verificação";
-      diagnosticMessage.textContent = "Enviando uma solicitação mínima ao provedor. Esta ação consome uma pequena quantidade de uso da API.";
+    async function loadHistory() {
+      const list = document.getElementById("historyList");
+      list.replaceChildren(); const loading = document.createElement("div"); loading.className = "drawer-empty"; loading.textContent = "Carregando conversas…"; list.append(loading);
       try {
-        const response = await fetch("/api/diagnostics/test", { method: "POST" });
+        const response = await fetch("/api/conversations");
+        if (response.status === 401) return location.replace("/login");
+        if (!response.ok) throw new Error("Falha ao consultar histórico");
         const data = await response.json();
-        aiStatus.textContent = data.success ? "Conectada" : "Indisponível";
-        aiStatus.style.color = data.success ? "#54d69a" : "#ffb5b5";
-        checkedAt.textContent = formatTime(data.checked_at);
-        diagnosticMessage.textContent = data.message;
-      } catch (error) {
-        aiStatus.textContent = "Falha no teste";
-        diagnosticMessage.textContent = error.message;
-      } finally {
-        testConnectionButton.disabled = false;
-        testConnectionButton.textContent = "Testar IA";
+        list.replaceChildren();
+        if (!data.conversations.length) { const empty = document.createElement("div"); empty.className = "drawer-empty"; empty.textContent = "Suas conversas aparecerão aqui."; list.append(empty); return; }
+        data.conversations.forEach((conversation) => {
+          const item = document.createElement("button"); item.type = "button";
+          item.className = "history-item" + (conversation.id === conversationId ? " active" : "");
+          const title = document.createElement("strong"); title.textContent = conversation.title || "Nova conversa";
+          const meta = document.createElement("small"); meta.textContent = `${conversation.message_count} mensagens · ${formatTime(conversation.updated_at)}`;
+          item.append(title, meta);
+          item.addEventListener("click", () => openConversation(conversation.id));
+          list.append(item);
+        });
+      } catch (_) {
+        list.replaceChildren(); const error = document.createElement("div"); error.className = "drawer-empty"; error.textContent = "Não foi possível carregar o histórico."; list.append(error);
       }
     }
 
-    document.getElementById("refreshStatus").addEventListener("click", refreshDiagnostics);
-    testConnectionButton.addEventListener("click", runConnectionTest);
-    refreshDiagnostics();
-    restoreConversation();
-    initializeUserMemory();
+    function clearMessages() {
+      messagesElement.replaceChildren();
+      history.splice(0, history.length);
+      stage.classList.remove("has-messages");
+    }
+
+    async function openConversation(id) {
+      try {
+        const response = await fetch(`/api/conversations/${encodeURIComponent(id)}`);
+        if (response.status === 401) return location.replace("/login");
+        if (!response.ok) throw new Error("Conversa indisponível");
+        const conversation = await response.json();
+        conversationId = conversation.id;
+        localStorage.setItem("atlas_conversation_id", conversationId);
+        clearMessages();
+        conversation.messages.forEach((message) => {
+          history.push({ role: message.role, content: message.content });
+          const bubble = addMessage(message.role, message.content);
+          if (message.role === "assistant" && message.model && message.provider !== "atlas-memory") {
+            const note = document.createElement("div"); note.className = message.fallback_used ? "model-note fallback-note" : "model-note";
+            note.textContent = message.fallback_used ? `Modelo alternativo · ${message.model}` : `Modelo utilizado · ${message.model}`;
+            bubble.append(note);
+          }
+        });
+        setCoreState("idle", "Aguardando interação");
+        closeDrawers();
+      } catch (_) {
+        setCoreState("offline", "Conexão indisponível");
+      }
+    }
+
+    async function refreshCompletedConversation() {
+      if (!conversationId || chatInFlight || !navigator.onLine) return;
+      try {
+        const response = await fetch(`/api/conversations/${encodeURIComponent(conversationId)}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        const differs = data.messages.length !== history.length || data.messages.some((message, index) =>
+          history[index]?.role !== message.role || history[index]?.content !== message.content
+        );
+        if (differs) await openConversation(conversationId);
+      } catch (_) { /* A próxima verificação tenta atualizar novamente. */ }
+    }
+
+    document.getElementById("newConversation").addEventListener("click", () => {
+      conversationId = null;
+      localStorage.removeItem("atlas_conversation_id");
+      clearMessages(); closeDrawers(); setCoreState("idle", "Aguardando interação"); promptInput.focus();
+    });
+
+    function addMessage(role, content, isError = false) {
+      stage.classList.add("has-messages");
+      const bubble = document.createElement("div");
+      bubble.className = `bubble ${role}` + (isError ? " error" : "");
+      bubble.textContent = content;
+      messagesElement.appendChild(bubble);
+      messagesElement.scrollTop = messagesElement.scrollHeight;
+      return bubble;
+    }
+
+    async function restoreConversation() {
+      if (!conversationId) return;
+      await openConversation(conversationId);
+    }
+
+    function recentMessagesForRequest(allMessages, limit = 20) {
+      const recent = allMessages.slice(-limit);
+      while (recent.length && recent[0].role !== "user") recent.shift();
+      return recent;
+    }
+
+    function apiErrorMessage(data, status) {
+      const detail = data?.detail;
+      if (typeof detail === "string" && detail.trim()) return detail;
+      if (Array.isArray(detail)) {
+        const messages = detail.map((item) => {
+          if (typeof item === "string") return item;
+          if (!item || typeof item !== "object") return "";
+          const message = typeof item.msg === "string" ? item.msg : item.message;
+          const location = Array.isArray(item.loc) ? item.loc.filter((part) => part !== "body").join(".") : "";
+          if (typeof message !== "string") return "";
+          return location ? `${location}: ${message}` : message;
+        }).filter(Boolean);
+        if (messages.length) return messages.join("; ");
+      }
+      if (detail && typeof detail === "object") {
+        const message = detail.message || detail.msg || detail.error?.message;
+        if (typeof message === "string" && message.trim()) return message;
+      }
+      if (status === 422) return "O pedido contém dados inválidos. Revise a mensagem e tente novamente.";
+      return `Falha do servidor (HTTP ${status}). Tente novamente em instantes.`;
+    }
 
     async function initializeUserMemory() {
       try {
@@ -173,97 +469,117 @@
         const name = window.prompt("Antes de começar: como devo chamar você?");
         if (!name || !name.trim()) return;
         await fetch("/api/memory/facts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ category: "profile", key: "name", value: name.trim() })
         });
-      } catch (error) {
-        console.warn("Não foi possível inicializar o perfil de memória.", error);
-      }
-    }
-
-    async function restoreConversation() {
-      if (!conversationId) return;
-      try {
-        const response = await fetch("/api/conversations/" + encodeURIComponent(conversationId));
-        if (!response.ok) throw new Error("Conversa anterior não encontrada.");
-        const conversation = await response.json();
-        conversation.messages.forEach((message) => {
-          history.push({ role: message.role, content: message.content });
-          const bubble = addMessage(message.role, message.content);
-          if (message.role === "assistant" && message.model && message.provider !== "atlas-memory") {
-            const note = document.createElement("div");
-            note.className = message.fallback_used ? "model-note fallback-note" : "model-note";
-            note.textContent = message.fallback_used
-              ? "Resposta gerada pelo modelo alternativo " + message.model + "."
-              : "Modelo utilizado: " + message.model;
-            bubble.appendChild(note);
-          }
-        });
-      } catch (error) {
-        localStorage.removeItem("atlas_conversation_id");
-        conversationId = null;
-      }
-    }
-
-    function addMessage(role, content, isError = false) {
-      const bubble = document.createElement("div");
-      bubble.className = "bubble " + role + (isError ? " error" : "");
-      bubble.textContent = content;
-      messagesElement.appendChild(bubble);
-      messagesElement.scrollTop = messagesElement.scrollHeight;
-      return bubble;
+      } catch (_) { /* Memória indisponível não impede a conversa. */ }
     }
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const content = promptInput.value.trim();
       if (!content || sendButton.disabled) return;
-
       history.push({ role: "user", content });
-      addMessage("user", content);
+      const userBubble = addMessage("user", content);
       promptInput.value = "";
+      chatInFlight = true;
       sendButton.disabled = true;
-      sendButton.textContent = "Aguarde...";
-      const pending = addMessage("assistant", "Estou processando sua mensagem...");
-
+      const pending = addMessage("assistant", "");
+      const cancelControl = document.createElement("button"); cancelControl.type = "button"; cancelControl.className = "small-action"; cancelControl.textContent = "Cancelar solicitação";
+      messagesElement.append(cancelControl);
+      let activeTaskId = null; let wasCancelled = false;
+      cancelControl.addEventListener("click", async () => {
+        if (!activeTaskId) return;
+        cancelControl.disabled = true; cancelControl.textContent = "Cancelando…";
+        try { await fetch(`/api/tasks/${encodeURIComponent(activeTaskId)}/cancel`, { method: "POST" }); }
+        catch (_) { cancelControl.disabled = false; cancelControl.textContent = "Cancelar solicitação"; }
+      });
+      setCoreState("receiving", "Recebendo mensagem");
       try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history, conversation_id: conversationId })
+        const response = await fetch("/api/chat/stream", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: recentMessagesForRequest(history), conversation_id: conversationId })
         });
-        const responseText = await response.text();
-        let data = null;
-        try {
-          data = responseText ? JSON.parse(responseText) : {};
-        } catch {
-          if (!response.ok) throw new Error(`Falha do servidor (HTTP ${response.status}). Tente novamente em instantes.`);
-          throw new Error("O servidor retornou uma resposta inválida. Tente novamente.");
+        if (!response.ok) {
+          const responseText = await response.text(); let data = {};
+          try { data = responseText ? JSON.parse(responseText) : {}; } catch {}
+          throw new Error(apiErrorMessage(data, response.status));
         }
-        if (!response.ok) throw new Error(data?.detail || `Falha do servidor (HTTP ${response.status}).`);
-        pending.textContent = data.reply;
-        conversationId = data.conversation_id;
+        if (!response.body) throw new Error("O navegador não conseguiu abrir o fluxo de resposta.");
+        setCoreState("processing", "Processando contexto");
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = ""; let reply = ""; let completion = null;
+        while (true) {
+          const { value, done } = await reader.read();
+          buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+          const frames = buffer.split(/\r?\n\r?\n/); buffer = frames.pop() || "";
+          for (const frame of frames) {
+            const lines = frame.split(/\r?\n/);
+            const eventName = lines.find((line) => line.startsWith("event:"))?.slice(6).trim();
+            const dataText = lines.filter((line) => line.startsWith("data:")).map((line) => line.slice(5).trim()).join("\n");
+            if (!dataText) continue;
+            let eventData;
+            try { eventData = JSON.parse(dataText); } catch { throw new Error("O servidor enviou um trecho inválido."); }
+            if (eventName === "task") {
+              activeTaskId = eventData.task_id;
+              conversationId = eventData.conversation_id;
+              localStorage.setItem("atlas_conversation_id", conversationId);
+              if (eventData.resumed) {
+                history.pop(); history.push({ role: "user", content: eventData.prompt });
+                userBubble.textContent = eventData.prompt;
+                setCoreState("processing", "Retomando solicitação");
+              }
+            } else if (eventName === "delta") {
+              setCoreState("generating", "Gerando resposta");
+              reply += eventData.text || ""; pending.textContent = reply;
+              messagesElement.scrollTop = messagesElement.scrollHeight;
+            } else if (eventName === "retry") {
+              pending.dataset.retrying = "true";
+              setCoreState("processing", "Tentando novamente");
+            } else if (eventName === "reset") {
+              reply = "";
+            } else if (eventName === "done") completion = eventData;
+            else if (eventName === "cancelled") wasCancelled = true;
+            else if (eventName === "error") throw new Error(eventData.detail || "Não foi possível concluir a resposta.");
+          }
+          if (done) break;
+        }
+        if (wasCancelled) {
+          pending.remove(); cancelControl.remove();
+          addMessage("assistant", "Solicitação cancelada. Ela não foi adicionada ao histórico concluído.");
+          setCoreState("idle", "Solicitação cancelada"); return;
+        }
+        if (!completion) throw new Error("A conexão terminou antes da conclusão da resposta.");
+        conversationId = completion.conversation_id;
         localStorage.setItem("atlas_conversation_id", conversationId);
-        if (data.provider !== "atlas-memory") {
-          const modelNotice = document.createElement("div");
-          modelNotice.className = data.fallback_used ? "model-note fallback-note" : "model-note";
-          modelNotice.textContent = data.fallback_used
-            ? "Modelo alternativo utilizado devido à indisponibilidade temporária do principal."
-            : "";
-          if (modelNotice.textContent) pending.appendChild(modelNotice);
+        if (completion.fallback_used) {
+          const note = document.createElement("div"); note.className = "model-note fallback-note";
+          note.textContent = "Modelo alternativo utilizado devido à indisponibilidade temporária do principal.";
+          pending.appendChild(note);
         }
-        history.push({ role: "assistant", content: data.reply });
+        history.push({ role: "assistant", content: reply });
+        cancelControl.remove();
+        setCoreState("ready", "Aguardando interação");
       } catch (error) {
-        pending.remove();
+        pending.remove(); cancelControl.remove(); history.pop();
         addMessage("assistant", error.message, true);
-        history.pop();
+        setCoreState("offline", "Conexão indisponível");
       } finally {
+        chatInFlight = false;
         sendButton.disabled = false;
-        sendButton.textContent = "Enviar ↗";
         promptInput.focus();
       }
     });
+
+    promptInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); form.requestSubmit(); }
+    });
+    window.addEventListener("online", () => { setCoreState("idle", "Aguardando interação"); refreshCompletedConversation(); });
+    window.addEventListener("offline", () => setCoreState("offline", "Conexão indisponível"));
+    restoreConversation();
+    initializeUserMemory();
+    window.setInterval(refreshCompletedConversation, 4000);
   </script>
 </body>
 </html>

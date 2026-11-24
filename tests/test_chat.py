@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from backend.app.core.config import Settings
 from backend.app.intelligence.provider import AIProviderError, ChatMessage
 from backend.app.main import create_app
+from tests.auth_helpers import owner_client
 
 
 class FakeProvider:
@@ -29,7 +30,7 @@ def test_chat_returns_provider_response_without_real_api_call():
         settings=Settings(environment="test", openai_api_key=None, ai_model="fake-model"),
         ai_provider=FakeProvider(),
     )
-    client = TestClient(app)
+    client = owner_client(app)
 
     response = client.post(
         "/api/chat",
@@ -52,7 +53,7 @@ def test_chat_reports_missing_api_configuration():
     app = create_app(
         settings=Settings(environment="test", openai_api_key=None, ai_model="fake-model")
     )
-    client = TestClient(app)
+    client = owner_client(app)
 
     response = client.post(
         "/api/chat",
@@ -67,7 +68,7 @@ def test_chat_returns_safe_provider_error_and_status():
         settings=Settings(environment="test", ai_model="fake-model"),
         ai_provider=UnavailableProvider(),
     )
-    client = TestClient(app)
+    client = owner_client(app)
 
     response = client.post(
         "/api/chat",
@@ -80,7 +81,7 @@ def test_chat_returns_safe_provider_error_and_status():
 
 def test_existing_root_and_health_routes_are_preserved():
     app = create_app(settings=Settings(environment="test"))
-    client = TestClient(app)
+    client = owner_client(app)
 
     assert client.get("/").json()["sistema"] == "A.T.L.A.S."
     assert client.get("/health").json()["status"] == "online"
@@ -97,7 +98,7 @@ def test_diagnostics_reports_backend_and_configuration_without_calling_provider(
         ),
         ai_provider=FakeProvider(),
     )
-    client = TestClient(app)
+    client = owner_client(app)
 
     response = client.get("/api/diagnostics")
 
@@ -116,7 +117,7 @@ def test_diagnostics_connection_test_uses_provider():
         settings=Settings(environment="test", ai_provider="gemini", ai_model="test-model"),
         ai_provider=DiagnosticsProvider(),
     )
-    client = TestClient(app)
+    client = owner_client(app)
 
     response = client.post("/api/diagnostics/test")
 

@@ -8,11 +8,28 @@ __pycache__/
 .env
 .env.*
 !.env.example
+*.pem
+*.p12
+*.pfx
+/credentials*.json
+/service-account*.json
 
 *.db
 *.sqlite
 *.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 *.log
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+/backups/
 
 .vscode/*
 !.vscode/extensions.json

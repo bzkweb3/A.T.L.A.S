@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.core.config import Settings
 from backend.app.main import create_app
+from tests.auth_helpers import owner_client
 from backend.app.intelligence.provider import ChatMessage
 
 
@@ -13,7 +14,7 @@ class MemoryAwareProvider:
 
 
 def test_explicit_name_is_remembered_and_injected_into_new_chat():
-    client = TestClient(create_app(settings=Settings(environment="test"), ai_provider=MemoryAwareProvider()))
+    client = owner_client(create_app(settings=Settings(environment="test"), ai_provider=MemoryAwareProvider()))
     saved = client.post("/api/memory/facts", json={"category": "profile", "key": "name", "value": "Brendo"})
     assert saved.status_code == 200
     assert client.get("/api/memory").json()["facts"][0]["value"] == "Brendo"
@@ -26,7 +27,7 @@ def test_name_is_extracted_from_explicit_user_statement():
     class EchoMemoryProvider:
         async def generate_reply(self, messages):
             return "Registrado."
-    client = TestClient(create_app(settings=Settings(environment="test"), ai_provider=EchoMemoryProvider()))
+    client = owner_client(create_app(settings=Settings(environment="test"), ai_provider=EchoMemoryProvider()))
     response = client.post("/api/chat", json={"messages": [{"role": "user", "content": "Meu nome é Brendo."}]})
     assert response.status_code == 200
     facts = client.get("/api/memory").json()["facts"]
@@ -39,7 +40,7 @@ def test_personal_memory_questions_are_answered_without_calling_ai():
         async def generate_reply(self, messages):
             raise AssertionError("Pergunta simples de memória não deve chamar a IA.")
 
-    client = TestClient(create_app(
+    client = owner_client(create_app(
         settings=Settings(environment="test"),
         ai_provider=MustNotRunProvider(),
     ))
@@ -69,7 +70,7 @@ def test_explicit_location_is_saved_and_acknowledged_without_ai():
         async def generate_reply(self, messages):
             raise AssertionError("Declaração explícita de perfil não deve chamar a IA.")
 
-    client = TestClient(create_app(
+    client = owner_client(create_app(
         settings=Settings(environment="test"),
         ai_provider=MustNotRunProvider(),
     ))
@@ -84,7 +85,7 @@ def test_explicit_location_is_saved_and_acknowledged_without_ai():
 
 
 def test_memory_fact_can_be_deleted_without_removing_other_facts():
-    client = TestClient(create_app(settings=Settings(environment="test"), ai_provider=MemoryAwareProvider()))
+    client = owner_client(create_app(settings=Settings(environment="test"), ai_provider=MemoryAwareProvider()))
     client.post("/api/memory/facts", json={
         "category": "profile", "key": "name", "value": "Brendo"
     })
@@ -101,7 +102,7 @@ def test_memory_fact_can_be_deleted_without_removing_other_facts():
 
 
 def test_deleting_unknown_memory_fact_returns_404():
-    client = TestClient(create_app(settings=Settings(environment="test"), ai_provider=MemoryAwareProvider()))
+    client = owner_client(create_app(settings=Settings(environment="test"), ai_provider=MemoryAwareProvider()))
     response = client.delete("/api/memory/facts/profile/unknown")
     assert response.status_code == 404
 

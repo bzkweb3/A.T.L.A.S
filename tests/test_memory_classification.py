@@ -7,6 +7,7 @@ from backend.app.core.config import Settings
 from backend.app.core.long_term_memory import LongTermMemory
 from backend.app.intelligence.provider import ChatMessage
 from backend.app.main import create_app
+from tests.auth_helpers import owner_client
 
 
 def test_memory_stores_classifications_and_updates_them(tmp_path):
@@ -51,7 +52,7 @@ def test_build_context_excludes_sensitive_values(tmp_path):
 
 
 def test_api_classification_crud_and_default():
-    client = TestClient(create_app(settings=Settings(environment="test")))
+    client = owner_client(create_app(settings=Settings(environment="test")))
 
     for classification in ("general", "personal", "sensitive"):
         response = client.post("/api/memory/facts", json={
@@ -101,7 +102,7 @@ def test_sensitive_fact_is_not_sent_to_ai_provider():
             return "Resposta simulada."
 
     provider = InspectingProvider()
-    client = TestClient(create_app(
+    client = owner_client(create_app(
         settings=Settings(environment="test"), ai_provider=provider
     ))
     client.post("/api/memory/facts", json={

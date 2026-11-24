@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.core.config import Settings
 from backend.app.main import create_app
+from tests.auth_helpers import owner_client
 
 from backend.app.intelligence.provider import ChatMessage
 
@@ -15,7 +16,7 @@ def test_chat_is_saved_and_can_be_restored_after_app_restart(tmp_path):
     database_path = str(tmp_path / "atlas-test.db")
     settings = Settings(environment="test", ai_model="fake-model", database_path=database_path)
 
-    first_client = TestClient(create_app(settings=settings, ai_provider=FakeProvider()))
+    first_client = owner_client(create_app(settings=settings, ai_provider=FakeProvider()))
     response = first_client.post(
         "/api/chat",
         json={"messages": [{"role": "user", "content": "Olá, A.T.L.A.S."}]},
@@ -29,7 +30,7 @@ def test_chat_is_saved_and_can_be_restored_after_app_restart(tmp_path):
     assert [message["role"] for message in saved.json()["messages"]] == ["user", "assistant"]
     assert saved.json()["messages"][0]["content"] == "Olá, A.T.L.A.S."
 
-    second_client = TestClient(create_app(settings=settings, ai_provider=FakeProvider()))
+    second_client = owner_client(create_app(settings=settings, ai_provider=FakeProvider()))
     restored = second_client.get(f"/api/conversations/{conversation_id}")
 
     assert restored.status_code == 200
@@ -38,7 +39,7 @@ def test_chat_is_saved_and_can_be_restored_after_app_restart(tmp_path):
 
 
 def test_conversation_endpoint_returns_404_for_unknown_id():
-    client = TestClient(create_app(settings=Settings(environment="test")))
+    client = owner_client(create_app(settings=Settings(environment="test")))
 
     response = client.get("/api/conversations/does-not-exist")
 

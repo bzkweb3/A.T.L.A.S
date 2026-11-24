@@ -6,7 +6,7 @@ import sqlite3
 from typing import Iterator
 from uuid import uuid4
 
-_SCHEMA_VERSION = 2
+_SCHEMA_VERSION = 4
 
 
 class SQLiteDatabase:
@@ -58,6 +58,14 @@ class SQLiteDatabase:
             if current_version < 2:
                 self._migrate_to_version_2(connection)
                 connection.execute("PRAGMA user_version = 2")
+                current_version = 2
+            if current_version < 3:
+                self._migrate_to_version_3(connection)
+                connection.execute("PRAGMA user_version = 3")
+                current_version = 3
+            if current_version < 4:
+                self._migrate_to_version_4(connection)
+                connection.execute("PRAGMA user_version = 4")
 
     @staticmethod
     def _migrate_to_version_1(connection: sqlite3.Connection) -> None:
@@ -105,4 +113,91 @@ class SQLiteDatabase:
         connection.execute(
             "ALTER TABLE user_facts ADD COLUMN classification TEXT NOT NULL DEFAULT 'personal' "
             "CHECK(classification IN ('general', 'personal', 'sensitive'))"
+        )
+
+    @staticmethod
+    def _migrate_to_version_3(connection: sqlite3.Connection) -> None:
+        """Add owner authentication, device registry, sessions and login throttling."""
+        connection.execute(
+            """CREATE TABLE auth_owner (
+                id INTEGER PRIMARY KEY CHECK(id = 1),
+                password_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                password_changed_at TEXT NOT NULL
+            )"""
+        )
+        connection.execute(
+            """CREATE TABLE auth_devices (
+                id TEXT PRIMARY KEY,
+                label TEXT NOT NULL,
+                user_agent TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                last_seen_at TEXT NOT NULL,
+                revoked_at TEXT
+            )"""
+        )
+        connection.execute(
+            """CREATE TABLE auth_sessions (
+                id TEXT PRIMARY KEY,
+                device_id TEXT NOT NULL REFERENCES auth_devices(id) ON DELETE CASCADE,
+                token_hash TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL,
+                last_seen_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                revoked_at TEXT
+            )"""
+        )
+        connection.execute(
+            "CREATE INDEX idx_auth_sessions_device ON auth_sessions(device_id, revoked_at)"
+        )
+        connection.execute(
+            """CREATE TABLE auth_login_throttle (
+                id INTEGER PRIMARY KEY CHECK(id = 1),
+                failed_attempts INTEGER NOT NULL DEFAULT 0,
+                window_started_at TEXT,
+                lock_level INTEGER NOT NULL DEFAULT 0,
+                locked_until TEXT
+            )"""
+        )
+
+    @staticmethod
+    def _migrate_to_version_4(connection: sqlite3.Connection) -> None:
+        """Add durable chat tasks and isolated execution attempts."""
+        connection.execute(
+            """CREATE TABLE conversation_tasks (
+                id TEXT PRIMARY KEY,
+                conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+                prompt TEXT NOT NULL,
+                messages_json TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN (
+                    'pending', 'processing', 'partially_completed', 'completed', 'failed', 'cancelled'
+                )),
+                active_attempt INTEGER NOT NULL DEFAULT 0,
+                attempt_count INTEGER NOT NULL DEFAULT 0,
+                last_error TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                completed_at TEXT
+            )"""
+        )
+        connection.execute(
+            "CREATE INDEX idx_conversation_tasks_pending "
+            "ON conversation_tasks(conversation_id, status, updated_at DESC)"
+        )
+        connection.execute(
+            """CREATE TABLE task_attempts (
+                task_id TEXT NOT NULL REFERENCES conversation_tasks(id) ON DELETE CASCADE,
+                attempt_number INTEGER NOT NULL,
+                status TEXT NOT NULL CHECK(status IN (
+                    'processing', 'partially_completed', 'completed', 'failed', 'cancelled'
+                )),
+                partial_text TEXT NOT NULL DEFAULT '',
+                provider TEXT,
+                model TEXT,
+                error_code TEXT,
+                started_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                completed_at TEXT,
+                PRIMARY KEY(task_id, attempt_number)
+            )"""
         )

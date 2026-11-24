@@ -54,7 +54,7 @@ def test_version_1_database_migrates_without_losing_existing_data(tmp_path):
     database = SQLiteDatabase(str(database_path))
 
     with database.connection() as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
         assert dict(connection.execute("SELECT * FROM conversations WHERE id = 'conv-1'").fetchone()) == {
             "id": "conv-1",
             "title": "Teste",
@@ -77,14 +77,54 @@ def test_version_1_database_migrates_without_losing_existing_data(tmp_path):
         assert fact["classification"] == "personal"
 
 
-def test_new_database_starts_at_schema_version_2(tmp_path):
+def test_new_database_starts_at_schema_version_4(tmp_path):
     database = SQLiteDatabase(str(tmp_path / "new.db"))
 
     with database.connection() as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
         columns = {row["name"] for row in connection.execute("PRAGMA table_info(user_facts)")}
         assert "classification" in columns
         assert connection.execute("SELECT COUNT(*) FROM user_facts").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM auth_owner").fetchone()[0] == 0
+
+
+def test_version_2_database_migrates_to_auth_schema_without_touching_user_data(tmp_path):
+    database_path = tmp_path / "version-2.db"
+    _create_version_1_database(database_path)
+    with sqlite3.connect(database_path) as connection:
+        connection.execute(
+            "ALTER TABLE user_facts ADD COLUMN classification TEXT NOT NULL DEFAULT 'personal' "
+            "CHECK(classification IN ('general','personal','sensitive'))"
+        )
+        connection.execute("PRAGMA user_version=2")
+
+    database = SQLiteDatabase(str(database_path))
+    with database.connection() as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert connection.execute("SELECT content FROM messages WHERE id=7").fetchone()[0] == "Mensagem antiga"
+        fact = connection.execute("SELECT fact_value,classification FROM user_facts WHERE id=11").fetchone()
+        assert tuple(fact) == ("Pessoa de Teste", "personal")
+        assert connection.execute("SELECT COUNT(*) FROM auth_sessions").fetchone()[0] == 0
+
+
+def test_failed_auth_migration_rolls_back_all_new_tables(tmp_path, monkeypatch):
+    database_path = tmp_path / "failed-auth-migration.db"
+    _create_version_1_database(database_path)
+    original = SQLiteDatabase._migrate_to_version_3
+
+    def fail_after_auth_schema(connection):
+        original(connection)
+        raise RuntimeError("simulated auth migration failure")
+
+    monkeypatch.setattr(SQLiteDatabase, "_migrate_to_version_3", staticmethod(fail_after_auth_schema))
+    with pytest.raises(RuntimeError, match="simulated auth migration failure"):
+        SQLiteDatabase(str(database_path))
+
+    with sqlite3.connect(database_path) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 1
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert not {"auth_owner", "auth_devices", "auth_sessions", "auth_login_throttle"}.intersection(tables)
+        assert connection.execute("SELECT content FROM messages WHERE id=7").fetchone()[0] == "Mensagem antiga"
 
 
 def test_failed_migration_rolls_back_schema_and_version(tmp_path, monkeypatch):
@@ -111,6 +151,30 @@ def test_failed_migration_rolls_back_schema_and_version(tmp_path, monkeypatch):
         columns = {row[1] for row in connection.execute("PRAGMA table_info(user_facts)")}
         assert "classification" not in columns
         assert connection.execute("SELECT fact_value FROM user_facts WHERE id = 11").fetchone()[0] == "Pessoa de Teste"
+
+
+def test_failed_task_migration_rolls_back_tasks_schema_and_version(tmp_path, monkeypatch):
+    database_path = tmp_path / "failed-task-migration.db"
+    _create_version_1_database(database_path)
+    with sqlite3.connect(database_path) as connection:
+        connection.execute("ALTER TABLE user_facts ADD COLUMN classification TEXT NOT NULL DEFAULT 'personal'")
+        connection.execute("PRAGMA user_version=3")
+
+    original = SQLiteDatabase._migrate_to_version_4
+
+    def fail_after_task_schema(connection):
+        original(connection)
+        raise RuntimeError("simulated task migration failure")
+
+    monkeypatch.setattr(SQLiteDatabase, "_migrate_to_version_4", staticmethod(fail_after_task_schema))
+    with pytest.raises(RuntimeError, match="simulated task migration failure"):
+        SQLiteDatabase(str(database_path))
+
+    with sqlite3.connect(database_path) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert "conversation_tasks" not in tables
+        assert "task_attempts" not in tables
 
 
 def test_connection_closes_if_initial_configuration_fails(tmp_path, monkeypatch):
