@@ -85,7 +85,9 @@ async def chat(payload: ChatRequest, request: Request, response: Response) -> Ch
     memory = request.app.state.long_term_memory
     extracted = memory.extract_explicit_facts(latest)
     facts = {(fact["category"], fact["key"]): fact["value"] for fact in memory.list_facts()}
-    context = memory.build_context()
+    context = memory.build_context(latest, [
+        {"role": item.role, "content": item.content} for item in payload.messages
+    ])
     messages = [ChatMessage(role=item.role, content=item.content) for item in payload.messages]
     if context:
         messages.insert(0, ChatMessage(role="system", content=context))
@@ -198,7 +200,9 @@ async def chat_stream(payload: ChatRequest, request: Request) -> StreamingRespon
     latest_user_text = next((m.content for m in reversed(payload.messages) if m.role == "user"), "")
     memory = request.app.state.long_term_memory
     extracted_facts = memory.extract_explicit_facts(latest_user_text)
-    context = memory.build_context()
+    context = memory.build_context(latest_user_text, [
+        {"role": item.role, "content": item.content} for item in payload.messages
+    ])
     facts = {(fact["category"], fact["key"]): fact["value"] for fact in memory.list_facts()}
     normalized_question = " ".join(latest_user_text.lower().strip(" ?!.").split())
     direct_reply = None

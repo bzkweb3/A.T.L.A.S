@@ -1,0 +1,79 @@
+{
+  "project": "A.T.L.A.S.",
+  "asset_reference": "frontend/assets/nucleo.png",
+  "canvas": {
+    "viewBox": "0 0 1672 941",
+    "aspect_ratio": 1.7768,
+    "background": "near-black navy"
+  },
+  "visual_structure": {
+    "core": "A volumetric holographic energy form made from multiple continuous ribbon-like surfaces, not wings and not a solid sphere.",
+    "ribbons": {
+      "count": "approximately 3 visually dominant interwoven ribbon surfaces",
+      "geometry": "closed or looping smooth 3D-like surfaces with broad curved contours; each ribbon should fold, cross and pass behind/in front of the others",
+      "main_bounds_normalized": {
+        "x_min": 0.19,
+        "x_max": 0.82,
+        "y_min": 0.14,
+        "y_max": 0.81
+      },
+      "upper_arch": "rises from the left-center, peaks around x=0.56, y=0.16, then descends toward the right-center",
+      "lower_fold": "broad luminous loop crossing the lower center, with a low point around x=0.54, y=0.80",
+      "side_loops": "rounded lateral folds extending to approximately x=0.19 on the left and x=0.82 on the right",
+      "depth_order": "split each ribbon into front/back segments at crossings; use masks or clipping so overlap order changes along the path"
+    },
+    "surface": {
+      "mesh": "dense curved point lattice following each ribbon surface in rows and columns",
+      "density": "high, with thousands of tiny cyan/blue points; points follow the surface curvature rather than random scatter",
+      "edge": "bright cyan/blue/violet rim highlights, stronger at folds and crossings",
+      "fill": "semi-transparent blue and violet gradients with darker translucent interior"
+    },
+    "central_waveform": {
+      "position": "horizontal center, approximately y=0.50",
+      "bounds_normalized": {
+        "x_min": 0.34,
+        "x_max": 0.67,
+        "y_min": 0.38,
+        "y_max": 0.61
+      },
+      "appearance": "thin horizontal cyan line with a symmetric, sharply peaked audio waveform; brightest at the center",
+      "integration": "waveform sits in the open central cavity and remains visually separate from the ribbon surfaces"
+    },
+    "outer_orbits": {
+      "position": "surrounding the ribbon core",
+      "elements": [
+        "thin elliptical arcs",
+        "dotted orbital paths",
+        "short luminous arc segments",
+        "small glowing nodes"
+      ],
+      "style": "subtle, sparse and secondary; do not become the dominant shape"
+    },
+    "particles": "small cyan, blue and occasional violet points around the core and along the ribbon surfaces"
+  },
+  "palette": {
+    "cyan": "#00DFFF",
+    "electric_blue": "#087BFF",
+    "deep_blue": "#073C9B",
+    "violet": "#A64DFF",
+    "white_cyan_highlight": "#D8FFFF"
+  },
+  "animation": {
+    "idle": "slow continuous flow of mesh points along ribbon surfaces, subtle ribbon undulation, slow orbit movement, gentle waveform breathing",
+    "listening": "waveform reacts with faster, more pronounced amplitude; cyan highlights intensify",
+    "processing": "mesh flow and internal particles accelerate; layered glow pulses in blue",
+    "speaking": "waveform animates rhythmically and prominently; ribbon movement remains smooth",
+    "executing": "faster particle circulation and stronger violet/blue energy accents",
+    "offline": "reduce brightness, slow movement significantly, retain a faint visible silhouette"
+  },
+  "implementation_constraints": [
+    "Do not display the PNG as the final animated core.",
+    "Use the PNG only as a visual reference during implementation.",
+    "Do not simplify the core into two open wing-like curves.",
+    "Do not use generic concentric circles as the main structure.",
+    "Do not create a solid sphere.",
+    "Preserve the existing AtlasCore JavaScript state controller and all six states.",
+    "Prefer SVG paths plus generated surface point meshes, masks and gradients; Canvas/WebGL is acceptable if it achieves the reference more faithfully.",
+    "Validate against the original PNG side by side in the browser."
+  ]
+}

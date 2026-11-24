@@ -133,4 +133,6 @@ def test_named_project_context_is_saved_and_categorized():
         and fact["value"] == "desenvolvendo memória contextual"
         for fact in facts
     )
-    assert "Projetos / a_t_l_a_s" in memory.build_context()
+    assert "Projetos / a_t_l_a_s" in memory.build_context(
+        "Qual é o andamento do projeto A.T.L.A.S.?"
+    )

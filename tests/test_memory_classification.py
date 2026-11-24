@@ -44,7 +44,7 @@ def test_build_context_excludes_sensitive_values(tmp_path):
     memory.remember("test", "personal", "PERSONAL_TEST_VALUE", classification="personal")
     memory.remember("test", "sensitive", "SENSITIVE_TEST_VALUE", classification="sensitive")
 
-    context = memory.build_context()
+    context = memory.build_context("PUBLIC_TEST_VALUE PERSONAL_TEST_VALUE SENSITIVE_TEST_VALUE")
 
     assert "PUBLIC_TEST_VALUE" in context
     assert "PERSONAL_TEST_VALUE" in context
@@ -119,7 +119,9 @@ def test_sensitive_fact_is_not_sent_to_ai_provider():
     })
 
     response = client.post("/api/chat", json={
-        "messages": [{"role": "user", "content": "Considere as informações que você lembra."}]
+        "messages": [{"role": "user", "content": (
+            "Considere PUBLIC_PROVIDER_TEST_VALUE e PERSONAL_PROVIDER_TEST_VALUE se forem relevantes."
+        )}]
     })
 
     assert response.status_code == 200

@@ -10,7 +10,7 @@
       color-scheme: dark;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #030713; color: #e8efff;
-      --cyan: #65caff; --cyan-soft: #b7e7ff; --blue: #397cf5;
+      --cyan: #65caff; --cyan-soft: #b7e7ff; --blue: #397cf5; --violet: #9479ff;
       --muted: #8698b7; --line: rgba(91, 124, 183, .2);
     }
     * { box-sizing: border-box; }
@@ -20,27 +20,19 @@
     button { color: inherit; }
     .app-shell { width: min(1440px, 100%); height: 100vh; height: 100dvh; min-height: 0; margin: auto; padding: 0 40px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
     .topbar { height: 70px; flex: 0 0 70px; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); }
-    .identity { display: flex; align-items: center; gap: 13px; min-width: 0; }
-    .brand-mark { width: 36px; height: 36px; position: relative; display: grid; place-items: center; color: var(--cyan); font-size: 24px; border: 1px solid rgba(102, 184, 255, .46); transform: rotate(45deg); box-shadow: 0 0 25px rgba(49, 123, 255, .15), inset 0 0 12px rgba(49, 123, 255, .12); }
-    .brand-mark span { transform: rotate(-45deg); }
-    .brand-copy h1 { margin: 0; font-size: 15px; letter-spacing: .25em; font-weight: 700; }
+    .identity { display: flex; align-items: center; min-width: 0; }
+    .atlas-logo { display: block; width: clamp(174px, 19vw, 232px); height: auto; max-height: 58px; object-fit: contain; object-position: left center; }
     .top-actions { display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
     .ghost-button { min-height: 36px; padding: 0 12px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #a0aec7; font-size: 11px; cursor: pointer; transition: color .2s, background .2s, border-color .2s; }
     .ghost-button:hover, .ghost-button[aria-expanded="true"] { color: var(--cyan-soft); background: rgba(47, 104, 207, .12); border-color: rgba(89, 157, 255, .26); }
     .ghost-button.logout { color: #8494ae; }
     main { flex: 1 1 0; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
     .stage { flex: 1 1 0; width: 100%; max-width: 960px; min-width: 0; min-height: 0; margin: 0 auto; display: flex; flex-direction: column; overflow: hidden; }
-    .core-stage { flex: 1 1 auto; min-height: 220px; display: grid; place-items: center; transition: flex-basis .45s ease, min-height .45s ease; }
+    .core-stage { flex: 1 1 auto; min-height: 0; overflow: hidden; display: grid; place-items: center; transition: flex-basis .45s ease, min-height .45s ease; }
     .core { width: 100%; height: 100%; display: grid; place-items: center; position: relative; }
-    .core-wrap { width: 220px; height: 220px; display: grid; place-items: center; position: relative; perspective: 900px; transition: transform .45s ease; }
-    .core-orbit, .core-orbit::before, .core-orbit::after { position: absolute; content: ""; border: 1px solid rgba(60, 117, 209, .2); border-radius: 50%; inset: 8px; }
-    .core-orbit { border-style: dashed; animation: orbit 42s linear infinite; transform: rotateX(67deg) rotateZ(-12deg); }
-    .core-orbit::before { inset: 10px; border-style: solid; border-color: rgba(58, 152, 241, .22); transform: rotateY(58deg); }
-    .core-orbit::after { inset: -12px; border-color: rgba(49, 116, 223, .12); transform: rotateX(35deg); }
-    .core-glow { position: absolute; width: 174px; height: 174px; border-radius: 50%; background: rgba(24, 84, 219, .2); filter: blur(34px); animation: breathe 5.6s ease-in-out infinite; }
-    .core-energy { z-index: 1; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 12px rgba(22, 132, 255, .2)); animation: energy-breathe 6s ease-in-out infinite; transform-origin: 50% 50%; }
-    .energy-sphere { fill: url(#atlasSphere); stroke: rgba(86, 197, 255, .62); stroke-width: 1.2; }
-    .energy-sheen { fill: url(#atlasSheen); opacity: .84; }
+    .core-wrap { position: relative; width: min(42vw, 340px); aspect-ratio: 1; height: auto; display: grid; place-items: center; perspective: 900px; transition: transform .5s ease; }
+    .core-halo { position: absolute; inset: 14%; z-index: -1; border-radius: 50%; background: radial-gradient(circle, rgba(40, 113, 255, .24), rgba(88, 65, 220, .1) 48%, transparent 74%); filter: blur(34px); animation: atlas-halo 6s ease-in-out infinite; }
+    .core-energy { z-index: 1; display: block; width: 100%; height: 100%; overflow: visible; user-select: none; pointer-events: none; transform-origin: center; animation: core-breathe 6s ease-in-out infinite; }
     .energy-ribbon { fill: none; stroke: url(#atlasRibbon); stroke-linecap: round; stroke-width: 2.1; filter: url(#atlasGlow); stroke-dasharray: 16 8 4 7; animation: ribbon-flow 14s linear infinite; transform-origin: 50% 50%; }
     .energy-ribbon.secondary { stroke: rgba(55, 156, 255, .78); stroke-width: 1.25; stroke-dasharray: 3 8 18 5; animation-duration: 19s; animation-direction: reverse; }
     .energy-ribbon.fine { stroke: rgba(94, 204, 255, .78); stroke-width: .85; stroke-dasharray: 2 11 7 5; animation-duration: 11s; }
@@ -48,25 +40,28 @@
     .energy-filament.alt { stroke: rgba(66, 119, 255, .78); animation-delay: -2s; animation-duration: 5.5s; }
     .energy-particle { fill: #c3eaff; filter: url(#atlasGlow); animation: particle-flicker 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
     .energy-particle.blue { fill: #438fff; animation-delay: -1.2s; }
+    .energy-particle.violet { fill: #c4b7ff; animation-duration: 2.7s; }
+    .core-orbit { fill: none; stroke: rgba(67, 148, 255, .24); stroke-width: 1; stroke-dasharray: 2 8; transform-origin: center; animation: orbit 36s linear infinite; }
     .core-state, .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-    .core[data-state="receiving"] .core-orbit, .core[data-state="processing"] .core-orbit { animation-duration: 13s; border-color: rgba(83, 164, 255, .42); }
-    .core[data-state="receiving"] .core-energy { animation-duration: 2.2s; transform: scale(1.045); }
-    .core[data-state="receiving"] .energy-ribbon { animation-duration: 5s; stroke-width: 2.8; }
+    @keyframes atlas-halo { 0%, 100% { opacity: .4; transform: scale(.9); } 50% { opacity: .95; transform: scale(1.12); } }
+    @keyframes core-breathe { 0%, 100% { transform: scale(.97); filter: brightness(.9); } 50% { transform: scale(1.025); filter: brightness(1.12); } }
+    @keyframes orbit { to { transform: rotate(360deg); } }
+    @keyframes ribbon-flow { from { stroke-dashoffset: 0; transform: rotate(0deg) scale(.99); } to { stroke-dashoffset: -120px; transform: rotate(360deg) scale(1.025); } }
+    @keyframes filament-pulse { 0%,100% { opacity: .38; stroke-dashoffset: 0; } 50% { opacity: .95; stroke-dashoffset: -60px; } }
+    @keyframes particle-flicker { 0%,100% { opacity: .35; transform: scale(.72); } 48% { opacity: 1; transform: scale(1.35); } }
+    .core[data-state="listening"] .core-energy { animation-duration: 2.6s; }
+    .core[data-state="listening"] .energy-ribbon { animation-duration: 5s; stroke-width: 2.8; }
     .core[data-state="processing"] .core-energy { animation-duration: 1.8s; }
     .core[data-state="processing"] .energy-ribbon { animation-duration: 4.2s; }
     .core[data-state="processing"] .energy-filament { animation-duration: 2.4s; }
-    .core[data-state="generating"] .core-energy { animation-duration: 2.8s; }
-    .core[data-state="generating"] .core-glow { animation-duration: 1.7s; }
-    .core[data-state="generating"] .energy-ribbon { animation-duration: 6s; }
-    .core[data-state="speaking"] .core-energy { animation: energy-speak 1.15s ease-in-out infinite; }
+    .core[data-state="speaking"] .core-energy { animation-duration: 1.3s; }
     .core[data-state="speaking"] .energy-particle { animation-duration: .9s; }
-    .core[data-state="offline"] .core-orbit { animation-duration: 90s; opacity: .45; }
-    .core[data-state="offline"] .core-energy { opacity: .38; filter: saturate(.55) drop-shadow(0 0 8px rgba(77, 131, 192, .14)); animation-duration: 10s; }
-    .core[data-state="offline"] .energy-ribbon, .core[data-state="offline"] .energy-filament { stroke: rgba(103, 142, 184, .42); }
-    .core[data-state="offline"] .core-glow { background: rgba(36, 75, 131, .12); }
+    .core[data-state="executing"] .energy-ribbon { animation-duration: 3.5s; stroke-width: 2.6; }
+    .core[data-state="offline"] .core-energy { filter: brightness(.46) saturate(.58); animation-duration: 12s; }
+    .core[data-state="offline"] .core-halo { opacity: .18; }
     .stage:not(.has-messages) .core-stage { min-height: 0; }
-    .stage.has-messages .core-stage { flex: 0 0 160px; min-height: 0; }
-    .stage.has-messages .core-wrap { transform: scale(.7); }
+    .stage.has-messages .core-stage { flex: 0 0 clamp(158px, 20dvh, 184px); min-height: 0; overflow: hidden; }
+    .stage.has-messages .core-wrap { width: 190px; transform: scale(.88); }
     .messages { flex: 1 1 0; min-height: 0; max-height: none; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 15px; padding: 16px 3px 22px; scrollbar-color: #243c68 transparent; scrollbar-width: thin; }
     .messages > * { flex-shrink: 0; }
     .bubble { max-width: min(82%, 720px); padding: 12px 16px; border-radius: 13px; font-size: 13px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; animation: rise .3s ease both; }
@@ -104,50 +99,40 @@
     .small-action:hover { border-color: rgba(103, 174, 255, .48); color: #d0e6ff; }
     .drawer-foot { padding-top: 14px; border-top: 1px solid var(--line); }
     .drawer-foot .ghost-button { width: 100%; border-color: rgba(83, 132, 207, .22); }
-    @keyframes orbit { to { transform: rotate(360deg); } }
-    @keyframes breathe { 0%,100% { opacity: .42; transform: scale(.86); } 50% { opacity: .9; transform: scale(1.13); } }
-    @keyframes energy-breathe { 0%,100% { transform: scale(.965) rotate(-1deg); filter: brightness(.9); } 50% { transform: scale(1.025) rotate(1deg); filter: brightness(1.12); } }
-    @keyframes energy-speak { 0%,100% { transform: scale(.96); filter: brightness(.92); } 50% { transform: scale(1.055); filter: brightness(1.28); } }
-    @keyframes ribbon-flow { from { stroke-dashoffset: 0; transform: rotate(0deg) scale(.99); } to { stroke-dashoffset: -120px; transform: rotate(360deg) scale(1.025); } }
-    @keyframes filament-pulse { 0%,100% { opacity: .38; stroke-dashoffset: 0; } 50% { opacity: .95; stroke-dashoffset: -60px; } }
-    @keyframes particle-flicker { 0%,100% { opacity: .35; transform: scale(.72); } 48% { opacity: 1; transform: scale(1.35); } }
+    @keyframes atlas-halo { 0%, 100% { opacity: .45; transform: scale(.92); } 50% { opacity: .95; transform: scale(1.08); } }
     @keyframes rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes slide-in { from { transform: translateX(18px); opacity: .7; } to { transform: translateX(0); opacity: 1; } }
     @media (max-width: 760px) {
       .app-shell { padding: 0 18px; }
       .topbar { height: 64px; flex-basis: 64px; gap: 8px; }
-      .identity { gap: 10px; }
-      .brand-mark { width: 30px; height: 30px; font-size: 20px; }
-      .brand-copy h1 { font-size: 13px; }
+      .atlas-logo { width: clamp(142px, 27vw, 190px); max-height: 48px; }
       .top-actions { gap: 1px; }
       .ghost-button { min-height: 34px; padding: 0 9px; font-size: 10px; }
-      .core-wrap { width: 200px; height: 200px; }
-      .stage.has-messages .core-stage { flex-basis: 132px; }
-      .stage.has-messages .core-wrap { transform: scale(.62); }
+      .core-wrap { width: min(78vw, 320px); }
+      .stage.has-messages .core-stage { flex-basis: clamp(152px, 20dvh, 176px); }
+      .stage.has-messages .core-wrap { width: min(52vw, 180px); transform: none; }
       .bubble { max-width: 94%; font-size: 13px; }
       .composer-wrap { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
       .composer { gap: 3px; padding-left: 12px; }
     }
     @media (max-width: 420px) {
       .app-shell { padding: 0 12px; }
-      .brand-mark { width: 27px; height: 27px; font-size: 18px; }
-      .brand-copy h1 { font-size: 12px; letter-spacing: .18em; }
+      .atlas-logo { width: clamp(126px, 35vw, 160px); max-height: 42px; }
       .ghost-button { padding: 0 7px; font-size: 9px; }
-      .stage.has-messages .core-stage { flex-basis: 118px; }
-      .stage.has-messages .core-wrap { transform: scale(.55); }
+      .stage.has-messages .core-stage { flex-basis: clamp(144px, 19dvh, 160px); }
       textarea { font-size: 13px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+      .core-energy, .core-halo { animation: none !important; }
     }
   </style>
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <div class="identity" aria-label="A.T.L.A.S.">
-        <div class="brand-mark" aria-hidden="true"><span>✧</span></div>
-        <div class="brand-copy"><h1>A.T.L.A.S.</h1></div>
+      <div class="identity">
+        <img class="atlas-logo" src="/assets/Logotipo.png" alt="A.T.L.A.S." width="2172" height="724">
       </div>
       <nav class="top-actions" aria-label="Controles da sessão">
         <button class="ghost-button" id="showHistory" type="button" aria-expanded="false">Histórico</button>
@@ -159,48 +144,28 @@
     <main>
       <section class="stage" id="stage" aria-label="Conversa com A.T.L.A.S.">
         <section class="core-stage" aria-label="Núcleo de inteligência">
-          <div class="core" id="atlasCore" data-state="idle">
-            <div class="core-wrap" aria-hidden="true">
-              <div class="core-glow"></div><div class="core-orbit"></div>
-              <svg class="core-energy" viewBox="0 0 260 260" role="presentation">
+          <div class="core" id="atlasCore" data-state="idle" data-core-state="IDLE" aria-busy="false">
+            <div class="core-wrap">
+              <div class="core-halo"></div>
+              <svg class="core-energy" viewBox="0 0 260 260" role="img" aria-label="Núcleo holográfico animado do A.T.L.A.S.">
                 <defs>
-                  <radialGradient id="atlasSphere" cx="37%" cy="28%" r="76%">
-                    <stop offset="0" stop-color="#164d91"/>
-                    <stop offset=".48" stop-color="#0b2854"/>
-                    <stop offset="1" stop-color="#061020"/>
-                  </radialGradient>
-                  <radialGradient id="atlasSheen" cx="35%" cy="25%" r="72%">
-                    <stop offset="0" stop-color="#54caff" stop-opacity=".32"/>
-                    <stop offset=".48" stop-color="#168eff" stop-opacity=".08"/>
-                    <stop offset="1" stop-color="#071326" stop-opacity="0"/>
-                  </radialGradient>
-                  <linearGradient id="atlasRibbon" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stop-color="#83f5ff"/>
-                    <stop offset=".38" stop-color="#269bff"/>
-                    <stop offset=".7" stop-color="#465dff"/>
-                    <stop offset="1" stop-color="#67dfff"/>
-                  </linearGradient>
-                  <filter id="atlasGlow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="2.2" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                  </filter>
+                  <radialGradient id="atlasSphere" cx="37%" cy="28%" r="76%"><stop offset="0" stop-color="#164d91"/><stop offset=".48" stop-color="#0b2854"/><stop offset="1" stop-color="#061020"/></radialGradient>
+                  <radialGradient id="atlasSheen" cx="35%" cy="25%" r="72%"><stop offset="0" stop-color="#54caff" stop-opacity=".32"/><stop offset=".48" stop-color="#168eff" stop-opacity=".08"/><stop offset="1" stop-color="#071326" stop-opacity="0"/></radialGradient>
+                  <linearGradient id="atlasRibbon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#83f5ff"/><stop offset=".38" stop-color="#269bff"/><stop offset=".7" stop-color="#465dff"/><stop offset="1" stop-color="#67dfff"/></linearGradient>
+                  <filter id="atlasGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                   <clipPath id="atlasCoreClip"><circle cx="130" cy="130" r="82"/></clipPath>
                 </defs>
-                <circle class="energy-sphere" cx="130" cy="130" r="82"/>
+                <ellipse class="core-orbit" cx="130" cy="130" rx="111" ry="42" transform="rotate(-8 130 130)"/>
+                <ellipse class="core-orbit" cx="130" cy="130" rx="105" ry="34" transform="rotate(61 130 130)" style="animation-direction:reverse;animation-duration:48s"/>
+                <circle cx="130" cy="130" r="82" fill="url(#atlasSphere)" stroke="rgba(86,197,255,.62)" stroke-width="1.2"/>
                 <g clip-path="url(#atlasCoreClip)">
-                  <ellipse class="energy-sheen" cx="108" cy="99" rx="91" ry="86"/>
+                  <ellipse cx="108" cy="99" rx="91" ry="86" fill="url(#atlasSheen)"/>
                   <path class="energy-ribbon" d="M38 125 C55 66 90 58 112 91 C134 123 143 188 177 177 C209 167 221 112 195 83 C169 54 126 80 104 117 C82 155 60 191 92 205 C123 218 158 188 168 151 C180 105 150 72 121 73 C91 74 72 112 84 141 C96 172 130 181 151 160 C170 141 172 112 154 103 C137 94 120 108 120 128 C121 150 145 154 158 141"/>
                   <path class="energy-ribbon secondary" d="M56 95 C83 54 131 68 144 103 C156 135 125 168 101 155 C76 141 88 105 111 101 C139 95 167 122 156 151 C146 180 111 193 82 173 C50 151 58 114 83 92 C111 66 173 76 193 111 C212 143 189 181 160 190"/>
                   <path class="energy-ribbon fine" d="M48 149 C71 180 86 120 110 89 C131 62 173 69 182 99 C193 134 158 151 139 135 C122 120 136 99 153 104 C175 111 173 153 150 171 C123 192 88 178 75 151 C61 123 84 84 111 82"/>
                   <path class="energy-filament" d="M47 118 C79 102 78 75 103 69 C133 62 152 86 168 103 C184 120 204 112 213 95"/>
                   <path class="energy-filament alt" d="M56 170 C88 162 91 202 123 199 C153 196 158 168 180 158 C196 151 206 160 216 174"/>
-                  <circle class="energy-particle" cx="79" cy="93" r="2.2"/>
-                  <circle class="energy-particle blue" cx="177" cy="88" r="2.6"/>
-                  <circle class="energy-particle" cx="188" cy="149" r="1.8"/>
-                  <circle class="energy-particle blue" cx="103" cy="184" r="2"/>
-                  <circle class="energy-particle" cx="132" cy="78" r="1.5"/>
-                  <circle class="energy-particle blue" cx="70" cy="146" r="1.7"/>
-                  <circle class="energy-particle" cx="153" cy="191" r="1.5"/>
+                  <circle class="energy-particle" cx="79" cy="93" r="2.2"/><circle class="energy-particle blue" cx="177" cy="88" r="2.6"/><circle class="energy-particle" cx="188" cy="149" r="1.8"/><circle class="energy-particle blue" cx="103" cy="184" r="2"/><circle class="energy-particle" cx="132" cy="78" r="1.5"/><circle class="energy-particle blue" cx="70" cy="146" r="1.7"/><circle class="energy-particle violet" cx="153" cy="191" r="1.5"/>
                 </g>
                 <circle cx="130" cy="130" r="82" fill="none" stroke="rgba(96,207,255,.38)" stroke-width=".8"/>
               </svg>
@@ -247,8 +212,23 @@
     const sendButton = document.getElementById("send");
     const messagesElement = document.getElementById("messages");
     const stage = document.getElementById("stage");
-    const core = document.getElementById("atlasCore");
-    const coreState = document.getElementById("coreState");
+    class AtlasCore {
+      static states = new Set(["idle", "listening", "processing", "speaking", "executing", "offline"]);
+      constructor(element, statusElement) {
+        this.element = element;
+        this.statusElement = statusElement;
+      }
+      setState(state, label) {
+        const normalized = AtlasCore.states.has(state) ? state : "idle";
+        this.element.dataset.state = normalized;
+        this.element.dataset.coreState = normalized.toUpperCase();
+        this.element.setAttribute("aria-busy", String(["processing", "executing"].includes(normalized)));
+        this.statusElement.textContent = label;
+      }
+    }
+    const atlasCore = new AtlasCore(
+      document.getElementById("atlasCore"), document.getElementById("coreState")
+    );
     const history = [];
     let conversationId = localStorage.getItem("atlas_conversation_id");
     let chatInFlight = false;
@@ -271,8 +251,7 @@
     };
 
     function setCoreState(state, label) {
-      core.dataset.state = state;
-      coreState.textContent = label;
+      atlasCore.setState(state, label);
     }
 
     function formatTime(value) {
@@ -494,7 +473,7 @@
         try { await fetch(`/api/tasks/${encodeURIComponent(activeTaskId)}/cancel`, { method: "POST" }); }
         catch (_) { cancelControl.disabled = false; cancelControl.textContent = "Cancelar solicitação"; }
       });
-      setCoreState("receiving", "Recebendo mensagem");
+      setCoreState("listening", "Entrada recebida");
       try {
         const response = await fetch("/api/chat/stream", {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -531,7 +510,7 @@
                 setCoreState("processing", "Retomando solicitação");
               }
             } else if (eventName === "delta") {
-              setCoreState("generating", "Gerando resposta");
+              setCoreState("speaking", "Respondendo");
               reply += eventData.text || ""; pending.textContent = reply;
               messagesElement.scrollTop = messagesElement.scrollHeight;
             } else if (eventName === "retry") {

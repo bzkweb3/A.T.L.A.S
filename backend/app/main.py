@@ -25,6 +25,7 @@ from backend.app.persistence.task_repository import TaskRepository
 from backend.app.core.task_recovery import recover_tasks
 
 FRONTEND_INDEX = Path(__file__).resolve().parents[2] / "frontend" / "index.html"
+FRONTEND_ASSETS = FRONTEND_INDEX.parent / "assets"
 
 
 def create_app(settings: Settings | None = None, ai_provider: AIProvider | None = None) -> FastAPI:
@@ -111,6 +112,10 @@ def create_app(settings: Settings | None = None, ai_provider: AIProvider | None 
         if application.state.auth_repository.get_session(request.cookies.get("atlas_session", "")) is None:
             return RedirectResponse("/login", status_code=303)
         return FileResponse(FRONTEND_INDEX)
+
+    @application.get("/assets/Logotipo.png", include_in_schema=False)
+    async def official_logo():
+        return FileResponse(FRONTEND_ASSETS / "Logotipo.png", media_type="image/png")
 
     @application.get("/login", include_in_schema=False)
     async def login_interface():

@@ -3,11 +3,13 @@
 from openai import AsyncOpenAI, OpenAIError
 
 from backend.app.core.config import Settings
+from backend.app.core.context_policy import ATLAS_CONTEXT_POLICY
 from backend.app.core.identity import ATLAS_IDENTITY_POLICY
 from backend.app.intelligence.provider import AIProviderError, AIReply, AIStreamChunk, ChatMessage
 
 ATLAS_INSTRUCTIONS = (
     ATLAS_IDENTITY_POLICY + " "
+    + ATLAS_CONTEXT_POLICY + " "
     "Você é um assistente digital inteligente, cordial e objetivo. "
     "Responda em português brasileiro por padrão. Seja claro, analítico e útil. "
     "Você não tem busca na web nem acesso a preços ou notícias em tempo real nesta conversa. "
